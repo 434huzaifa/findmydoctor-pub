@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+:root {
+  --teal: #0f6e56;
+  --teal-light: #1d9e75;
+  --teal-pale: #e6f4f1;
+  --text: #1a2e2a;
+  --text-muted: #5a7a70;
+  --border: #d4e8e0;
+  --font-inter: var(--font-inter);
+  --font-playfair: var(--font-playfair);
+}
+.font-serif { font-family: var(--font-playfair, serif); }
+.font-sans { font-family: var(--font-inter, sans-serif); }
+body { color: var(--text); background: #f7fcfa; }
