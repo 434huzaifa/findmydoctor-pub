@@ -20,6 +20,7 @@
     "@next/env": "^16.2.9",
     "@reduxjs/toolkit": "^2.11.2",
     "bcryptjs": "^3.0.3",
+    "clsx": "^2.1.1",
     "dayjs": "^1.11.20",
     "jsonwebtoken": "^9.0.3",
     "next": "16.2.4",
@@ -32,6 +33,7 @@
     "reflect-metadata": "^0.2.2",
     "rrule": "^2.8.1",
     "sonner": "^2.0.7",
+    "tailwind-merge": "^3.6.0",
     "typeorm": "^0.3.28",
     "zod": "^4.4.3"
   },

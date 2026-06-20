@@ -6,6 +6,10 @@ import {
   MedicineOrder,
   Specialty,
   User,
+  Ambulance,
+  AmbulanceDispatch,
+  HomeVisitRequest,
+  VirtualConsultation,
 } from "./data-source";
 
 export const ALLOWED: Record<string, EntityTarget<ObjectLiteral>> = {
@@ -15,4 +19,8 @@ export const ALLOWED: Record<string, EntityTarget<ObjectLiteral>> = {
   appointment: Appointment,
   medicine: Medicine,
   medicine_order: MedicineOrder,
+  ambulance: Ambulance,
+  ambulance_dispatch: AmbulanceDispatch,
+  home_visit_request: HomeVisitRequest,
+  virtual_consultation: VirtualConsultation,
 };

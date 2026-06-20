@@ -1,21 +1,25 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
-import "./globals.css";
-import { Providers } from "@/store/Providers";
+import { Toaster } from "sonner";
 import { NavBar } from "@/components/layout/NavBar";
 import { Footer } from "@/components/layout/Footer";
-import { Toaster } from "sonner";
+import { Providers } from "./providers";
+import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
+
 const playfair = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-playfair",
 });
 
 export const metadata: Metadata = {
-  title: { default: "FindMyDoctor", template: "%s | FindMyDoctor" },
+  title: "FindMyDoctor — Healthcare Platform",
   description:
-    "A centralized doctor information and appointment system for Bangladesh",
+    "Find doctors, book appointments, order medicines, and access emergency services in Bangladesh.",
 };
 
 export default function RootLayout({
@@ -24,16 +28,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body
-        suppressHydrationWarning
-        className={`${inter.variable} ${playfair.variable} font-sans antialiased`}
-      >
+    <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
+      <body className="font-sans min-h-screen flex flex-col">
         <Providers>
           <NavBar />
-          <main className="min-h-screen">{children}</main>
+          <main className="flex-1">{children}</main>
           <Footer />
-          <Toaster position="top-right" richColors />
+          <Toaster richColors position="top-right" />
         </Providers>
       </body>
     </html>

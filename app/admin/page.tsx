@@ -1,7 +1,9 @@
-﻿"use client";
-import { useState, useEffect } from "react";
+"use client";
+
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useAppSelector } from "@/store/hooks";
 import {
   useGetAdminDashboardQuery,
   useGetSchemaQuery,
@@ -9,197 +11,105 @@ import {
   useDeleteTableRowMutation,
   useUpdateTableRowMutation,
 } from "@/store/fmdApi";
-import { useAppSelector } from "@/store/hooks";
-import { StatCard } from "@/components/common/StatCard";
-import { AppModal } from "@/components/common/AppModal";
-import { AddDoctorModal } from "@/components/admin/AddDoctorModal";
+import { DashboardStats } from "@/components/admin/DashboardStats";
 import { AddSpecialtyForm } from "@/components/admin/AddSpecialtyForm";
-import { AddMedicineModal } from "@/components/admin/AddMedicineModal";
-
-function buildInitialRowValues(
-  row: Record<string, unknown>,
-  columns: { name: string; type: string; nullable: boolean }[],
-) {
-  const init: Record<string, string> = {};
-  for (const col of columns) init[col.name] = String(row[col.name] ?? "");
-  return init;
-}
-
-// ─── Generic Edit Modal ─────────────────────────────────────────────────────
-function EditRowModal({
-  open,
-  onClose,
-  table,
-  row,
-  columns,
-  onSaved,
-}: {
-  open: boolean;
-  onClose: () => void;
-  table: string;
-  row: Record<string, unknown>;
-  columns: { name: string; type: string; nullable: boolean }[];
-  onSaved: () => void;
-}) {
-  const [values, setValues] = useState<Record<string, string>>(() =>
-    buildInitialRowValues(row, columns),
-  );
-  const [updateRow, { isLoading }] = useUpdateTableRowMutation();
-
-  const editableCols = columns.filter(
-    (c) => c.name !== "id" && c.name !== "createdAt" && c.name !== "updatedAt",
-  );
-
-  async function handleSave() {
-    try {
-      const data: Record<string, unknown> = {};
-      for (const col of editableCols) {
-        const raw = values[col.name] ?? "";
-        if (["int4", "integer", "int"].includes(col.type)) {
-          data[col.name] = raw === "" ? null : Number(raw);
-        } else if (["float8", "decimal", "numeric"].includes(col.type)) {
-          data[col.name] = raw === "" ? null : parseFloat(raw);
-        } else if (["bool", "boolean"].includes(col.type)) {
-          data[col.name] = raw === "true";
-        } else {
-          data[col.name] = raw === "" && col.nullable ? null : raw;
-        }
-      }
-      await updateRow({ table, id: String(row.id), data }).unwrap();
-      toast.success("Row updated");
-      onSaved();
-      onClose();
-    } catch (e: unknown) {
-      toast.error((e as { error?: string })?.error ?? "Update failed");
-    }
-  }
-
-  return (
-    <AppModal
-      open={open}
-      onClose={onClose}
-      title={`Edit ${table} row`}
-      footer={
-        <>
-          <button
-            onClick={onClose}
-            className="rounded-lg border border-[color:var(--border)] px-4 py-1.5 text-sm"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={isLoading}
-            className="rounded-lg bg-[color:var(--teal)] px-4 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
-          >
-            {isLoading ? "Saving…" : "Save"}
-          </button>
-        </>
-      }
-    >
-      <div className="max-h-[60vh] overflow-y-auto space-y-3 pr-1">
-        {editableCols.map((col) => (
-          <div key={col.name} className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-[color:var(--text-muted)]">
-              {col.name}
-            </label>
-            <input
-              value={values[col.name] ?? ""}
-              onChange={(e) =>
-                setValues((v) => ({ ...v, [col.name]: e.target.value }))
-              }
-              className="rounded-lg border border-[color:var(--border)] px-3 py-1.5 text-sm focus:border-[color:var(--teal)] focus:outline-none"
-            />
-          </div>
-        ))}
-      </div>
-    </AppModal>
-  );
-}
-
-// ─── Add Specialty ──────────────────────────────────────────────────────────
-
-
-
+import { AddDoctorForm } from "@/components/admin/AddDoctorForm";
+import { AddMedicineForm } from "@/components/admin/AddMedicineForm";
+import { AddAmbulanceForm } from "@/components/admin/AddAmbulanceForm";
+import { EditRowModal } from "@/components/admin/EditRowModal";
 
 export default function AdminPage() {
-  const user = useAppSelector((s) => s.auth.user);
   const router = useRouter();
-  const isAuthorized = !!user && user.role === "admin";
+  const user = useAppSelector((s) => s.auth.user);
+  const isAuthorized = user?.role === "admin";
 
-  const { data: dashboard, refetch: refetchDashboard } =
-    useGetAdminDashboardQuery(undefined, {
-      skip: !isAuthorized,
-    });
-  const { data: schema, refetch: refetchSchema } = useGetSchemaQuery(
-    undefined,
-    {
-      skip: !isAuthorized,
-    },
-  );
+  const {
+    data: dashboard,
+    refetch: refetchDashboard,
+  } = useGetAdminDashboardQuery(undefined, { skip: !isAuthorized });
+
+  const {
+    data: schema,
+    refetch: refetchSchema,
+  } = useGetSchemaQuery(undefined, { skip: !isAuthorized });
+
   const [activeTable, setActiveTable] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+
   const {
     data: tableData,
     isLoading: isTableLoading,
     refetch,
   } = useGetTableRowsQuery(
     { table: activeTable ?? "", page },
-    { skip: !isAuthorized || !activeTable },
+    { skip: !isAuthorized || !activeTable }
   );
+
   const [deleteRow] = useDeleteTableRowMutation();
+  const [updateRow] = useUpdateTableRowMutation();
   const [editRow, setEditRow] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     if (!isAuthorized) router.replace("/login");
   }, [isAuthorized, router]);
+
   if (!isAuthorized) return null;
 
   const activeColumns =
     schema?.find((s) => s.key === activeTable)?.columns ?? [];
 
+  async function handleDelete(table: string, id: number) {
+    if (!confirm("Are you sure you want to delete this row?")) return;
+    try {
+      await deleteRow({ table, id }).unwrap();
+      toast.success("Row deleted");
+      refetch();
+    } catch {
+      toast.error("Failed to delete");
+    }
+  }
+
   return (
-    <div className="px-[5%] py-10">
-      <h1 className="font-serif text-3xl font-black text-[color:var(--teal)]">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <h1 className="text-2xl sm:text-3xl font-bold text-[color:var(--text)] mb-6">
         Admin Panel
       </h1>
 
-      {dashboard && (
-        <div className="mt-4 grid grid-cols-3 gap-4">
-          <StatCard label="Total Doctors" value={dashboard.doctors} />
-          <StatCard label="Appointments" value={dashboard.appointments} />
-          <StatCard
-            label="Revenue"
-            value={`৳${dashboard.revenue?.toLocaleString() ?? 0}`}
-          />
-        </div>
-      )}
+      {/* Dashboard Stats */}
+      {dashboard && <DashboardStats data={dashboard} />}
 
-      {/* Action buttons */}
-      <div className="mt-8 flex flex-wrap gap-3">
+      {/* Action Buttons */}
+      <div className="flex flex-wrap gap-3 mb-8">
         <AddSpecialtyForm
           onSaved={() => {
             refetchSchema();
             if (activeTable === "specialty") refetch();
           }}
         />
-        <AddDoctorModal
+        <AddDoctorForm
           onSaved={() => {
             refetchDashboard();
             refetchSchema();
             if (activeTable === "doctor") refetch();
           }}
         />
-        <AddMedicineModal
+        <AddMedicineForm
           onSaved={() => {
             refetchSchema();
             if (activeTable === "medicine") refetch();
           }}
         />
+        <AddAmbulanceForm
+          onSaved={() => {
+            refetchDashboard();
+            refetchSchema();
+            if (activeTable === "ambulance") refetch();
+          }}
+        />
       </div>
 
-      {/* Table selector */}
-      <div className="mt-6 flex gap-3 flex-wrap">
+      {/* Table Selector */}
+      <div className="flex flex-wrap gap-2 mb-6">
         {schema?.map((t) => (
           <button
             key={t.key}
@@ -207,135 +117,163 @@ export default function AdminPage() {
               setActiveTable(t.key);
               setPage(1);
             }}
-            className={`rounded-xl px-5 py-2 text-sm font-semibold transition ${activeTable === t.key
-              ? "bg-[color:var(--teal)] text-white"
-              : "border border-[color:var(--border)] bg-white text-[color:var(--teal)] hover:bg-[color:var(--teal-pale)]"
-              }`}
+            className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+              activeTable === t.key
+                ? "bg-[color:var(--teal)] text-white"
+                : "bg-white border border-[color:var(--border)] text-[color:var(--text-muted)] hover:border-[color:var(--teal)]"
+            }`}
           >
-            {t.tableName}
+            {t.key}
           </button>
         ))}
       </div>
 
+      {/* Table Data */}
       {activeTable && (
-        <div className="mt-6">
-          <div className="flex items-center justify-between">
-            <h2 className="font-serif text-xl font-bold text-[color:var(--teal)] capitalize">
+        <div className="rounded-2xl border border-[color:var(--border)] bg-white overflow-hidden">
+          <div className="px-5 py-4 border-b border-[color:var(--border)] flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-[color:var(--text)]">
               {activeTable} Table
             </h2>
             {tableData && (
-              <p className="text-sm text-[color:var(--text-muted)]">
+              <span className="text-sm text-[color:var(--text-muted)]">
                 {tableData.total} total rows
-              </p>
+              </span>
             )}
           </div>
+
           {isTableLoading ? (
-            <p className="mt-4 text-[color:var(--text-muted)]">Loading...</p>
-          ) : (
-            tableData && (
-              <div className="mt-4 overflow-x-auto rounded-xl border border-[color:var(--border)]">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b bg-[color:var(--teal-pale)]">
+            <div className="p-12 text-center text-[color:var(--text-muted)]">
+              Loading...
+            </div>
+          ) : tableData ? (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 border-b border-[color:var(--border)]">
+                    <tr>
                       {schema
                         ?.find((s) => s.key === activeTable)
                         ?.columns.map((c) => (
                           <th
                             key={c.name}
-                            className="min-w-[120px] whitespace-nowrap px-4 py-2.5 text-left font-semibold text-[color:var(--teal)]"
+                            className="px-4 py-3 text-left text-xs font-semibold text-[color:var(--text-muted)] uppercase whitespace-nowrap"
                           >
                             {c.name}
                           </th>
                         ))}
-                      <th className="min-w-[120px] px-4 py-2.5 text-center font-semibold text-[color:var(--teal)]">
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-[color:var(--text-muted)] uppercase">
                         Actions
                       </th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-[color:var(--border)]">
                     {tableData.rows.map((row, i) => (
-                      <tr key={i} className="border-b hover:bg-gray-50">
+                      <tr key={i} className="hover:bg-gray-50">
                         {schema
                           ?.find((s) => s.key === activeTable)
                           ?.columns.map((c) => (
                             <td
                               key={c.name}
-                              className="min-w-[120px] max-w-[220px] truncate whitespace-nowrap px-4 py-2.5 text-[color:var(--text)]"
+                              className="px-4 py-3 text-[color:var(--text)] max-w-[200px] truncate"
                             >
                               {String(row[c.name] ?? "")}
                             </td>
                           ))}
-                        <td className="px-4 py-2.5 text-center">
-                          <div className="flex justify-center gap-2">
-                            <button
-                              onClick={() => setEditRow(row)}
-                              className="rounded px-2 py-1 text-xs font-semibold text-[color:var(--teal)] hover:bg-[color:var(--teal-pale)]"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={async () => {
-                                if (
-                                  confirm(
-                                    "Delete this row? This cannot be undone.",
-                                  )
-                                ) {
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap gap-2">
+                            <button onClick={() => setEditRow(row)} className="text-xs text-blue-600 hover:underline">Edit</button>
+                            <button onClick={() => handleDelete(activeTable!, row.id as number)} className="text-xs text-red-600 hover:underline">Delete</button>
+                            
+                            {/* Quick status actions for orders */}
+                            {activeTable === "medicine_order" && row.status !== "delivered" && row.status !== "cancelled" && (
+                              <>
+                                <button onClick={async () => {
                                   try {
-                                    await deleteRow({
-                                      table: activeTable,
-                                      id: String(row.id),
-                                    }).unwrap();
-                                    toast.success("Row deleted");
+                                    const next: Record<string, string> = { pending: "confirmed", confirmed: "processing", processing: "delivered" };
+                                    const nextStatus = next[row.status as string] || "delivered";
+                                    await updateRow({ table: "medicine_order", id: row.id as number, data: { status: nextStatus } }).unwrap();
+                                    toast.success(`Order → ${nextStatus}`);
                                     refetch();
-                                  } catch (e: unknown) {
-                                    toast.error(
-                                      (e as { error?: string })?.error ??
-                                      "Delete failed",
-                                    );
-                                  }
-                                }
-                              }}
-                              className="rounded px-2 py-1 text-xs font-semibold text-red-600 hover:bg-red-50"
-                            >
-                              Delete
-                            </button>
+                                  } catch { toast.error("Failed"); }
+                                }} className="text-xs text-green-600 hover:underline">
+                                  → {({ pending: "Confirm", confirmed: "Process", processing: "Deliver" } as Record<string, string>)[row.status as string] || "Next"}
+                                </button>
+                                <button onClick={async () => {
+                                  try {
+                                    await updateRow({ table: "medicine_order", id: row.id as number, data: { status: "cancelled" } }).unwrap();
+                                    toast.success("Order cancelled");
+                                    refetch();
+                                  } catch { toast.error("Failed"); }
+                                }} className="text-xs text-orange-600 hover:underline">Cancel</button>
+                              </>
+                            )}
+
+                            {/* Quick toggle for ambulance availability */}
+                            {activeTable === "ambulance" && (
+                              <button onClick={async () => {
+                                try {
+                                  await updateRow({ table: "ambulance", id: row.id as number, data: { isAvailable: !row.isAvailable } }).unwrap();
+                                  toast.success(row.isAvailable ? "Marked busy" : "Marked available");
+                                  refetch();
+                                } catch { toast.error("Failed"); }
+                              }} className={`text-xs hover:underline ${row.isAvailable ? "text-orange-600" : "text-green-600"}`}>
+                                {row.isAvailable ? "→ Busy" : "→ Available"}
+                              </button>
+                            )}
+
+                            {/* Quick dispatch status */}
+                            {activeTable === "ambulance_dispatch" && row.status === "dispatched" && (
+                              <button onClick={async () => {
+                                try {
+                                  await updateRow({ table: "ambulance_dispatch", id: row.id as number, data: { status: "completed" } }).unwrap();
+                                  toast.success("Dispatch completed");
+                                  refetch();
+                                } catch { toast.error("Failed"); }
+                              }} className="text-xs text-green-600 hover:underline">→ Complete</button>
+                            )}
                           </div>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-                <div className="flex items-center justify-between px-4 py-3">
+              </div>
+
+              {/* Pagination */}
+              <div className="px-5 py-3 border-t border-[color:var(--border)] flex items-center justify-between">
+                <span className="text-sm text-[color:var(--text-muted)]">
+                  Page {page} of{" "}
+                  {Math.ceil(tableData.total / tableData.limit)}
+                </span>
+                <div className="flex gap-2">
                   <button
-                    disabled={page === 1}
+                    disabled={page <= 1}
                     onClick={() => setPage((p) => p - 1)}
-                    className="rounded-lg border border-[color:var(--border)] px-3 py-1 text-xs disabled:opacity-40"
+                    className="rounded-lg border border-[color:var(--border)] px-3 py-1.5 text-sm disabled:opacity-50"
                   >
-                    Prev
+                    ← Prev
                   </button>
-                  <span className="text-xs text-[color:var(--text-muted)]">
-                    Page {page} of{" "}
-                    {Math.ceil(tableData.total / tableData.limit)}
-                  </span>
                   <button
-                    disabled={page * tableData.limit >= tableData.total}
+                    disabled={
+                      page >= Math.ceil(tableData.total / tableData.limit)
+                    }
                     onClick={() => setPage((p) => p + 1)}
-                    className="rounded-lg border border-[color:var(--border)] px-3 py-1 text-xs disabled:opacity-40"
+                    className="rounded-lg border border-[color:var(--border)] px-3 py-1.5 text-sm disabled:opacity-50"
                   >
-                    Next
+                    Next →
                   </button>
                 </div>
               </div>
-            )
-          )}
+            </>
+          ) : null}
         </div>
       )}
 
-      {/* Generic Edit Modal */}
+      {/* Edit Row Modal */}
       {editRow && activeTable && (
         <EditRowModal
-          key={String(editRow.id ?? "")}
-          open={!!editRow}
+          isOpen
           onClose={() => setEditRow(null)}
           table={activeTable}
           row={editRow}

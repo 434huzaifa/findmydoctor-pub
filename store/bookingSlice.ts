@@ -1,4 +1,4 @@
-﻿import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
   BookingInfo,
   Doctor,
@@ -7,6 +7,7 @@ import type {
 } from "@/types/domain";
 
 type PendingBooking = { form: PendingBookingForm; doctor: Doctor } | null;
+
 type BookingState = {
   bookingInfo: BookingInfo;
   pendingBooking: PendingBooking;
@@ -30,13 +31,17 @@ const bookingSlice = createSlice({
       state.pendingBooking = payload;
       state.medicineOrderInfo = null;
     },
-    setMedicineOrderInfo(state, { payload }: PayloadAction<MedicineOrder>) {
+    setMedicineOrderInfo(
+      state,
+      { payload }: PayloadAction<MedicineOrder | null>
+    ) {
       state.medicineOrderInfo = payload;
       state.bookingInfo = null;
       state.pendingBooking = null;
     },
   },
 });
+
 export const { setBookingInfo, setPendingBooking, setMedicineOrderInfo } =
   bookingSlice.actions;
 export default bookingSlice.reducer;

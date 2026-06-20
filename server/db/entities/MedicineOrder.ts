@@ -28,6 +28,9 @@ export class MedicineOrder {
   @Column({ type: "int", default: 1, nullable: false })
   quantity!: number;
 
+  @Column({ type: "varchar", length: 255, nullable: true })
+  guestName!: string | null;
+
   @Column({ type: "varchar", length: 20, nullable: false })
   guestPhone!: string;
 
@@ -42,7 +45,6 @@ export class MedicineOrder {
   })
   status!: MedicineOrderStatus;
 
-  // ─── Relation ────────────────────────────────────────────────────────────
   @ManyToOne("Medicine", (medicine: Medicine) => medicine.orders, {
     onDelete: "RESTRICT",
     onUpdate: "CASCADE",

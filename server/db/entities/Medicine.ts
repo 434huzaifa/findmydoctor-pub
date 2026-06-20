@@ -28,6 +28,9 @@ export class Medicine {
   @Column({ type: "decimal", precision: 10, scale: 2, default: 0 })
   price!: number;
 
+  @Column({ type: "int", default: 0 })
+  stock!: number;
+
   @Column({ type: "varchar", length: 500, nullable: true })
   imageUrl!: string | null;
 

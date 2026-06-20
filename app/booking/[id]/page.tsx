@@ -1,236 +1,298 @@
-﻿"use client";
-import { use, useState } from "react";
+"use client";
+
+import { use, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   useGetDoctorQuery,
+  useGetOnlineDoctorsQuery,
+  useJoinConsultationQueueMutation,
   useCreateAppointmentMutation,
 } from "@/store/fmdApi";
-import { setBookingInfo, setPendingBooking } from "@/store/bookingSlice";
-import { useAppDispatch } from "@/store/hooks";
+import { AppModal } from "@/components/common/AppModal";
 
-// ── Helpers (no hooks, safe at module level) ───────────────────────────────
-
-function formatTime(t: string): string {
-  const [hStr, mStr] = t.split(":");
-  const h = parseInt(hStr ?? "0", 10);
-  const m = parseInt(mStr ?? "0", 10);
-  const period = h < 12 ? "AM" : "PM";
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${h12}:${String(m).padStart(2, "0")} ${period}`;
-}
-
-function deriveSlot(open?: string | null, close?: string | null): string {
-  if (open && close) return `${formatTime(open)} – ${formatTime(close)}`;
-  if (open) return `From ${formatTime(open)}`;
-  return "As scheduled";
-}
-
-// Shift a UTC ISO timestamp to Dhaka (UTC+6) and extract YYYY-MM-DD
-function deriveDate(utcIso: string): string {
-  const DHAKA_OFFSET_MS = 6 * 60 * 60 * 1000;
-  const local = new Date(new Date(utcIso).getTime() + DHAKA_OFFSET_MS);
-  return local.toISOString().slice(0, 10);
-}
-
-function formatDisplayDate(isoDate: string): string {
-  // isoDate is already YYYY-MM-DD in Dhaka time — parse as local to avoid off-by-one
-  const [y, m, d] = isoDate.split("-").map(Number);
-  return new Date(y!, m! - 1, d!).toLocaleDateString("en-BD", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-}
-
-// ── Page ──────────────────────────────────────────────────────────────────
-
-export default function BookingPage({
-  params,
-}: {
-  params: Promise<{ id: number }>;
-}) {
+export default function BookingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { data: doctor, isLoading } = useGetDoctorQuery(id);
-  const [createAppointment, { isLoading: isSubmitting }] =
-    useCreateAppointmentMutation();
-  const dispatch = useAppDispatch();
   const router = useRouter();
+  const { data: doctor, isLoading } = useGetDoctorQuery(parseInt(id));
+  const { data: onlineDoctors } = useGetOnlineDoctorsQuery(undefined, { pollingInterval: 5000 });
 
-  const [form, setForm] = useState({ patientName: "", patientPhone: "" });
-  const [error, setError] = useState("");
+  const [joinQueue, { isLoading: isJoining }] = useJoinConsultationQueueMutation();
+  const [createAppointment, { isLoading: isBooking }] = useCreateAppointmentMutation();
 
-  if (isLoading)
-    return (
-      <div className="py-24 text-center text-[color:var(--text-muted)]">
-        Loading...
-      </div>
-    );
-  if (!doctor)
-    return (
-      <div className="py-24 text-center text-red-500">Doctor not found.</div>
-    );
+  // Video modal
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [vName, setVName] = useState("");
+  const [vPhone, setVPhone] = useState("");
 
-  // No schedule yet
-  if (!doctor.nextAppointment) {
-    return (
-      <div className="mx-auto max-w-xl px-6 py-16 text-center">
-        <div className="text-5xl">📅</div>
-        <h1 className="mt-4 font-serif text-2xl font-black text-[color:var(--teal)]">
-          No Appointments Available
-        </h1>
-        <p className="mt-3 text-sm text-[color:var(--text-muted)]">
-          Dr. {doctor.name} has not set a schedule yet. Please check back later.
-        </p>
-      </div>
-    );
+  // In-person booking modal
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [bName, setBName] = useState("");
+  const [bPhone, setBPhone] = useState("");
+  const [bDate, setBDate] = useState("");
+  const [bSlot, setBSlot] = useState("10:00 AM - 10:30 AM");
+  const [bPaymentMethod, setBPaymentMethod] = useState<"online" | "cash">("online");
+  const [bPaymentChoice, setBPaymentChoice] = useState<"full" | "advance">("full");
+
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center"><div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" /></div>;
+  }
+  if (!doctor) {
+    return <div className="min-h-screen flex items-center justify-center"><p className="text-gray-600">Doctor not found</p></div>;
   }
 
-  const appointmentDate = deriveDate(doctor.nextAppointment);
-  const slot = deriveSlot(doctor.chamberOpenTime, doctor.chamberCloseTime);
-  const hasAdvanceFee = doctor.advanceFee > 0;
+  const isCurrentlyOnline = onlineDoctors?.some((d) => d.id === doctor.id) ?? false;
+  const availableSlots = doctor.totalSeats - doctor.usedSeats;
+  const hasAdvance = doctor.advanceFee > 0;
 
-  async function handleSubmit(e: React.FormEvent) {
+  const today = new Date().toISOString().split("T")[0];
+
+  const timeSlots = [
+    "09:00 AM - 09:30 AM", "09:30 AM - 10:00 AM", "10:00 AM - 10:30 AM",
+    "10:30 AM - 11:00 AM", "11:00 AM - 11:30 AM", "11:30 AM - 12:00 PM",
+    "02:00 PM - 02:30 PM", "02:30 PM - 03:00 PM", "03:00 PM - 03:30 PM",
+    "03:30 PM - 04:00 PM", "04:00 PM - 04:30 PM", "04:30 PM - 05:00 PM",
+  ];
+
+  async function handleJoinQueue(e: FormEvent) {
     e.preventDefault();
-    if (!doctor) return;
-    setError("");
-
-    const bookingForm = {
-      doctorId: doctor.id,
-      patientName: form.patientName,
-      patientPhone: form.patientPhone,
-      appointmentDate,
-      slot,
-    };
-
-    if (hasAdvanceFee) {
-      // Gate behind payment — don't create appointment yet
-      dispatch(setPendingBooking({ form: bookingForm, doctor }));
-      router.push("/payment");
-      return;
-    }
-
-    // Free / cash appointment — create immediately
+    if (!doctor || !vName.trim() || !vPhone.trim()) return;
     try {
-      const result = await createAppointment({
-        ...bookingForm,
-        paymentMethod: "cash",
-        paymentChoice: "full",
+      const result = await joinQueue({ doctorId: doctor.id, patientName: vName.trim(), patientPhone: vPhone.trim() }).unwrap();
+      toast.success("Joined queue!");
+      setShowVideoModal(false);
+      router.push(`/consultation/wait/${result.id}`);
+    } catch (err: unknown) {
+      toast.error((err as { data?: { message?: string } })?.data?.message ?? "Failed");
+    }
+  }
+
+  async function handleBookAppointment(e: FormEvent) {
+    e.preventDefault();
+    if (!doctor || !bName.trim() || !bPhone.trim() || !bDate || !bSlot) return;
+
+    try {
+      // Fake payment for online
+      if (bPaymentMethod === "online") {
+        toast.loading("Processing payment...");
+        await new Promise((r) => setTimeout(r, 1500));
+        toast.dismiss();
+        toast.success("Payment successful!");
+      }
+
+      await createAppointment({
+        doctorId: doctor.id,
+        patientName: bName.trim(),
+        patientPhone: bPhone.trim(),
+        appointmentDate: bDate,
+        slot: bSlot,
+        paymentMethod: bPaymentMethod,
+        paymentChoice: hasAdvance ? bPaymentChoice : undefined,
       }).unwrap();
-      dispatch(setBookingInfo({ appointment: result, doctor }));
+
+      toast.success("Appointment booked successfully!");
+      setShowBookingModal(false);
       router.push("/success");
     } catch (err: unknown) {
-      const e = err as { data?: { error?: string }; message?: string };
-      setError(
-        e?.data?.error ?? e?.message ?? "Booking failed. Please try again.",
-      );
+      toast.error((err as { data?: { message?: string } })?.data?.message ?? "Booking failed");
     }
   }
 
-  return (
-    <div className="mx-auto max-w-xl px-6 py-12">
-      <h1 className="font-serif text-3xl font-black text-[color:var(--teal)]">
-        Book Appointment
-      </h1>
-      <p className="mt-1 text-sm text-[color:var(--text-muted)]">
-        with {doctor.name} · {doctor.specialty?.name}
-      </p>
+  const payableAmount = bPaymentMethod === "cash" ? 0 : bPaymentChoice === "advance" ? doctor.advanceFee : doctor.fee;
 
-      {/* Appointment info card */}
-      <div className="mt-6 rounded-2xl border border-[color:var(--border)] bg-[color:var(--teal-pale)] p-5 space-y-3 text-sm">
-        <InfoRow label="📅 Date" value={formatDisplayDate(appointmentDate)} />
-        <InfoRow label="🕐 Chamber Hours" value={slot} />
-        {doctor.chamberAddress && (
-          <InfoRow label="📍 Chamber" value={doctor.chamberAddress} />
-        )}
-        {doctor.hospital && (
-          <InfoRow
-            label="🏥 Hospital"
-            value={`${doctor.hospital}${doctor.city ? `, ${doctor.city}` : ""}`}
-          />
-        )}
-        <div className="border-t border-[color:var(--border)] pt-3 flex justify-between">
-          <span className="font-semibold text-[color:var(--text-muted)]">
-            Consultation Fee
-          </span>
-          <span className="font-bold text-[color:var(--text)]">
-            ৳{doctor.fee.toLocaleString()}
-          </span>
-        </div>
-        {hasAdvanceFee && (
-          <div className="flex justify-between">
-            <span className="font-semibold text-[color:var(--text-muted)]">
-              Advance Fee (due now)
-            </span>
-            <span className="font-bold text-[color:var(--teal)]">
-              ৳{doctor.advanceFee.toLocaleString()}
-            </span>
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        <div className="rounded-2xl bg-white border shadow-lg overflow-hidden">
+          <div className="h-2 bg-gradient-to-r from-blue-500 to-indigo-600" />
+
+          <div className="p-6 sm:p-8">
+            {/* Doctor Info */}
+            <div className="flex flex-col sm:flex-row sm:items-start gap-6">
+              <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-blue-100 text-5xl shrink-0 mx-auto sm:mx-0">
+                {doctor.specialty?.icon || "👨‍⚕️"}
+              </div>
+              <div className="flex-1 text-center sm:text-left">
+                <h1 className="text-2xl font-bold text-gray-900">{doctor.name}</h1>
+                <p className="text-blue-600 font-medium">{doctor.specialty?.name}</p>
+                <p className="text-gray-500 text-sm">{doctor.degrees}</p>
+                <div className="mt-4 flex flex-wrap gap-3 justify-center sm:justify-start text-sm text-gray-600">
+                  <span>🏥 {doctor.hospital}</span>
+                  <span>📍 {doctor.city}{doctor.roomNumber && ` · Room ${doctor.roomNumber}`}</span>
+                  <span>⭐ {doctor.rating} · {doctor.exp} years</span>
+                </div>
+              </div>
+              <div className="text-center sm:text-right">
+                <p className="text-3xl font-bold text-blue-600">৳{doctor.fee}</p>
+                {hasAdvance && <p className="text-sm text-gray-500">Advance: ৳{doctor.advanceFee}</p>}
+              </div>
+            </div>
+
+            {/* Video Call */}
+            {isCurrentlyOnline && (
+              <div className="mt-6 rounded-xl bg-green-50 border-2 border-green-300 p-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl animate-pulse">🟢</span>
+                    <div>
+                      <p className="font-semibold text-green-800">{doctor.name} is LIVE Now!</p>
+                      <p className="text-sm text-green-600">Join the queue for instant video consultation</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setShowVideoModal(true)}
+                    className="w-full sm:w-auto px-6 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 animate-pulse text-lg">
+                    🎥 Join Live Queue
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!isCurrentlyOnline && (
+              <div className="mt-6 rounded-xl bg-gray-100 border border-gray-200 p-4 text-center">
+                <p className="text-gray-500 text-sm">⚪ Not available for video calls right now. Book an in-person appointment below.</p>
+              </div>
+            )}
+
+            {/* Chamber & Availability */}
+            {doctor.chamberAddress && (
+              <div className="mt-6 rounded-xl bg-gray-50 p-4">
+                <h3 className="font-semibold text-gray-900 mb-2">Chamber Address</h3>
+                <p className="text-gray-600">{doctor.chamberAddress}</p>
+                {doctor.chamberOpenTime && doctor.chamberCloseTime && (
+                  <p className="text-sm text-gray-500 mt-1">Hours: {doctor.chamberOpenTime} – {doctor.chamberCloseTime}</p>
+                )}
+              </div>
+            )}
+
+            <div className="mt-6 flex gap-4">
+              <div className="flex-1 rounded-xl bg-blue-50 p-4 text-center">
+                <p className="text-2xl font-bold text-blue-600">{availableSlots}</p>
+                <p className="text-sm text-blue-700">Slots Available</p>
+              </div>
+              <div className="flex-1 rounded-xl bg-gray-100 p-4 text-center">
+                <p className="text-2xl font-bold text-gray-600">{doctor.usedSeats}</p>
+                <p className="text-sm text-gray-500">Already Booked</p>
+              </div>
+            </div>
+
+            {/* Book In-Person */}
+            <div className="mt-8">
+              <button onClick={() => setShowBookingModal(true)} disabled={availableSlots <= 0}
+                className="w-full rounded-xl bg-blue-600 py-4 text-lg font-semibold text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                📅 Book Appointment
+              </button>
+              {availableSlots <= 0 && <p className="mt-2 text-center text-sm text-red-500">No slots available. Please try another date.</p>}
+            </div>
           </div>
-        )}
+        </div>
       </div>
 
-      {/* Advance fee warning */}
-      {hasAdvanceFee && (
-        <div className="mt-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
-          ⚠️ This doctor requires an advance payment of{" "}
-          <strong>৳{doctor.advanceFee.toLocaleString()}</strong> to confirm your
-          appointment. The remaining{" "}
-          <strong>৳{(doctor.fee - doctor.advanceFee).toLocaleString()}</strong>{" "}
-          will be collected at the clinic.
-        </div>
-      )}
+      {/* Video Queue Modal */}
+      <AppModal isOpen={showVideoModal} onClose={() => setShowVideoModal(false)} title="Join Video Consultation"
+        footer={
+          <>
+            <button onClick={() => setShowVideoModal(false)} className="rounded-lg border px-4 py-2 text-sm">Cancel</button>
+            <button type="submit" form="video-form" disabled={isJoining}
+              className="rounded-lg bg-green-600 px-6 py-2 text-sm font-semibold text-white disabled:opacity-50">
+              {isJoining ? "Joining..." : "🎥 Join Queue"}
+            </button>
+          </>
+        }>
+        <form id="video-form" onSubmit={handleJoinQueue} className="space-y-4">
+          <div className="rounded-xl bg-green-50 p-4">
+            <p className="text-sm text-green-800"><strong>{doctor.name}</strong> is online. Full video with chat, screen sharing & reactions.</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Your Name *</label>
+            <input type="text" required value={vName} onChange={(e) => setVName(e.target.value)} className="w-full rounded-lg border px-3 py-2.5 text-sm" placeholder="Full name" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Phone Number *</label>
+            <input type="tel" required value={vPhone} onChange={(e) => setVPhone(e.target.value)} className="w-full rounded-lg border px-3 py-2.5 text-sm" placeholder="+880 1XXX-XXXXXX" />
+          </div>
+        </form>
+      </AppModal>
 
-      {error && (
-        <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">
-          {error}
-        </p>
-      )}
+      {/* In-Person Booking Modal */}
+      <AppModal isOpen={showBookingModal} onClose={() => setShowBookingModal(false)} title="Book Appointment" size="lg"
+        footer={
+          <>
+            <button onClick={() => setShowBookingModal(false)} className="rounded-lg border px-4 py-2 text-sm">Cancel</button>
+            <button type="submit" form="booking-form" disabled={isBooking}
+              className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-semibold text-white disabled:opacity-50">
+              {isBooking ? "Booking..." : bPaymentMethod === "online" ? `💳 Pay ৳${payableAmount} & Book` : "📅 Book Now"}
+            </button>
+          </>
+        }>
+        <form id="booking-form" onSubmit={handleBookAppointment} className="space-y-4">
+          <div className="rounded-xl bg-blue-50 p-4">
+            <p className="font-semibold text-blue-900">{doctor.name}</p>
+            <p className="text-sm text-blue-700">{doctor.specialty?.name} · {doctor.hospital}</p>
+            <p className="text-lg font-bold text-blue-600 mt-1">৳{doctor.fee}</p>
+          </div>
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-        <label className="block text-sm font-semibold">
-          Patient Name
-          <input
-            required
-            value={form.patientName}
-            onChange={(e) => setForm({ ...form, patientName: e.target.value })}
-            placeholder="Full name"
-            className="mt-1 block w-full rounded-xl border border-[color:var(--border)] px-4 py-3 text-sm focus:border-[color:var(--teal)] focus:outline-none"
-          />
-        </label>
-        <label className="block text-sm font-semibold">
-          Phone Number
-          <input
-            required
-            type="tel"
-            value={form.patientPhone}
-            onChange={(e) => setForm({ ...form, patientPhone: e.target.value })}
-            placeholder="01XXXXXXXXX"
-            className="mt-1 block w-full rounded-xl border border-[color:var(--border)] px-4 py-3 text-sm focus:border-[color:var(--teal)] focus:outline-none"
-          />
-        </label>
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full rounded-xl bg-[color:var(--teal)] py-3 font-semibold text-white hover:bg-[color:var(--teal-light)] disabled:opacity-60"
-        >
-          {isSubmitting
-            ? "Booking..."
-            : hasAdvanceFee
-              ? `Proceed to Pay ৳${doctor.advanceFee.toLocaleString()}`
-              : "Confirm Booking"}
-        </button>
-      </form>
-    </div>
-  );
-}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Patient Name *</label>
+              <input type="text" required value={bName} onChange={(e) => setBName(e.target.value)} className="w-full rounded-lg border px-3 py-2.5 text-sm" placeholder="Full name" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Phone Number *</label>
+              <input type="tel" required value={bPhone} onChange={(e) => setBPhone(e.target.value)} className="w-full rounded-lg border px-3 py-2.5 text-sm" placeholder="+880 1XXX-XXXXXX" />
+            </div>
+          </div>
 
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between gap-4">
-      <span className="font-semibold text-[color:var(--text-muted)] shrink-0">
-        {label}
-      </span>
-      <span className="text-right text-[color:var(--text)]">{value}</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Appointment Date *</label>
+              <input type="date" required min={today} value={bDate} onChange={(e) => setBDate(e.target.value)} className="w-full rounded-lg border px-3 py-2.5 text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Time Slot *</label>
+              <select required value={bSlot} onChange={(e) => setBSlot(e.target.value)} className="w-full rounded-lg border px-3 py-2.5 text-sm">
+                {timeSlots.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Payment Method</label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" checked={bPaymentMethod === "online"} onChange={() => setBPaymentMethod("online")} />
+                <span className="text-sm">Online Payment</span>
+              </label>
+              {!hasAdvance && (
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" checked={bPaymentMethod === "cash"} onChange={() => setBPaymentMethod("cash")} />
+                  <span className="text-sm">Cash at Clinic</span>
+                </label>
+              )}
+            </div>
+          </div>
+
+          {hasAdvance && bPaymentMethod === "online" && (
+            <div>
+              <label className="block text-sm font-medium mb-2">Payment Amount</label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" checked={bPaymentChoice === "full"} onChange={() => setBPaymentChoice("full")} />
+                  <span className="text-sm">Full: ৳{doctor.fee}</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" checked={bPaymentChoice === "advance"} onChange={() => setBPaymentChoice("advance")} />
+                  <span className="text-sm">Advance: ৳{doctor.advanceFee}</span>
+                </label>
+              </div>
+            </div>
+          )}
+
+          <div className="rounded-lg bg-gray-50 p-3 flex justify-between text-sm">
+            <span>{bPaymentMethod === "cash" ? "Pay at clinic" : "Pay now"}</span>
+            <span className="font-bold">৳{payableAmount}</span>
+          </div>
+        </form>
+      </AppModal>
     </div>
   );
 }

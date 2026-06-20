@@ -54,6 +54,10 @@ export class Doctor {
   @Column({ type: "varchar", nullable: true })
   chamberAddress!: string | null;
 
+  // Phase 1.1 - Room Number
+  @Column({ type: "varchar", nullable: true })
+  roomNumber!: string | null;
+
   @Column({ type: "varchar", nullable: true })
   rrule!: string | null;
 
@@ -65,6 +69,13 @@ export class Doctor {
 
   @Column({ type: "varchar", nullable: true })
   chamberCloseTime!: string | null;
+
+  // Phase 5.1 - Video consultation fields
+  @Column({ type: "boolean", default: false })
+  isOnlineForVideo!: boolean;
+
+  @Column({ type: "varchar", nullable: true })
+  currentVideoLink!: string | null;
 
   @CreateDateColumn({ type: "timestamptz" })
   createdAt!: Date;

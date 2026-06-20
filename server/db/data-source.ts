@@ -8,6 +8,10 @@ import { Specialty } from "./entities/Specialty";
 import { Appointment } from "./entities/Appointment";
 import { Medicine } from "./entities/Medicine";
 import { MedicineOrder } from "./entities/MedicineOrder";
+import { Ambulance } from "./entities/Ambulance";
+import { AmbulanceDispatch } from "./entities/AmbulanceDispatch";
+import { HomeVisitRequest } from "./entities/HomeVisitRequest";
+import { VirtualConsultation } from "./entities/VirtualConsultation";
 
 // Ensure standalone scripts (tsx/typeorm CLI) load the same env files as Next.js.
 loadEnvConfig(process.cwd());
@@ -21,24 +25,29 @@ const globalForTypeORM = global as unknown as {
 let dataSourceInitPromise: Promise<DataSource> | null = null;
 
 const isTypeormCliProcess = process.argv.some(
-  (arg) => arg.includes("typeorm/cli") || arg.includes("typeorm\\cli"),
+  (arg) => arg.includes("typeorm/cli") || arg.includes("typeorm\\cli")
 );
 
 const dataSourceMode: "runtime" | "cli" = isTypeormCliProcess
   ? "cli"
   : "runtime";
 
+const allEntities = [
+  User,
+  Specialty,
+  Doctor,
+  Appointment,
+  Medicine,
+  MedicineOrder,
+  Ambulance,
+  AmbulanceDispatch,
+  HomeVisitRequest,
+  VirtualConsultation,
+];
+
 function hasCurrentEntityMetadata(ds: DataSource) {
   if (!ds.isInitialized) return true;
-
-  return (
-    ds.hasMetadata(User) &&
-    ds.hasMetadata(Specialty) &&
-    ds.hasMetadata(Doctor) &&
-    ds.hasMetadata(Appointment) &&
-    ds.hasMetadata(Medicine) &&
-    ds.hasMetadata(MedicineOrder)
-  );
+  return allEntities.every((entity) => ds.hasMetadata(entity));
 }
 
 function createAppDataSource() {
@@ -47,7 +56,7 @@ function createAppDataSource() {
     url: process.env.PG_URL,
     synchronize: false,
     logging: false,
-    entities: [User, Specialty, Doctor, Appointment, Medicine, MedicineOrder],
+    entities: allEntities,
     migrations: isTypeormCliProcess
       ? [
           path.join(
@@ -56,7 +65,7 @@ function createAppDataSource() {
             "db",
             "migrations",
             "**",
-            "*.{ts,js}",
+            "*.{ts,js}"
           ),
         ]
       : [],
@@ -118,11 +127,21 @@ export async function getDataSource(): Promise<DataSource> {
         dataSourceInitPromise = null;
         throw error;
       });
-
     return dataSourceInitPromise;
   }
 
   return ds;
 }
 
-export { User, Doctor, Specialty, Appointment, Medicine, MedicineOrder };
+export {
+  User,
+  Doctor,
+  Specialty,
+  Appointment,
+  Medicine,
+  MedicineOrder,
+  Ambulance,
+  AmbulanceDispatch,
+  HomeVisitRequest,
+  VirtualConsultation,
+};
