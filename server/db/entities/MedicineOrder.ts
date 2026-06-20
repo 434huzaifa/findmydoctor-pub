@@ -7,9 +7,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from "typeorm";
-import type { Medicine } from "./Medicine";
-
-const getMedicine = () => require("./Medicine").Medicine;
+import { Medicine } from "./Medicine";
 
 export enum MedicineOrderStatus {
   PENDING = "pending",
@@ -47,7 +45,7 @@ export class MedicineOrder {
   })
   status!: MedicineOrderStatus;
 
-  @ManyToOne(() => getMedicine(), (medicine: Medicine) => medicine.orders, {
+  @ManyToOne(() => Medicine, (medicine: Medicine) => medicine.orders, {
     onDelete: "RESTRICT",
     onUpdate: "CASCADE",
   })

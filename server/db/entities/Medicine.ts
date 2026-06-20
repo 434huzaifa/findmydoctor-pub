@@ -6,9 +6,7 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from "typeorm";
-import type { MedicineOrder } from "./MedicineOrder";
-
-const getMedicineOrder = () => require("./MedicineOrder").MedicineOrder;
+import { MedicineOrder } from "./MedicineOrder";
 
 @Entity("medicine")
 export class Medicine {
@@ -36,7 +34,7 @@ export class Medicine {
   @Column({ type: "varchar", length: 500, nullable: true })
   imageUrl!: string | null;
 
-  @OneToMany(() => getMedicineOrder(), (order: MedicineOrder) => order.medicine)
+  @OneToMany(() => MedicineOrder, (order: MedicineOrder) => order.medicine)
   orders!: MedicineOrder[];
 
   @CreateDateColumn({ type: "timestamptz" })

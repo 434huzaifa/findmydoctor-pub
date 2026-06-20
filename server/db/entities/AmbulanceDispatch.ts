@@ -7,9 +7,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from "typeorm";
-import type { Ambulance } from "./Ambulance";
-
-const getAmbulance = () => require("./Ambulance").Ambulance;
+import { Ambulance } from "./Ambulance";
 
 export enum DispatchStatus {
   DISPATCHED = "dispatched",
