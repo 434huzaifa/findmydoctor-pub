@@ -6,7 +6,10 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from "typeorm";
-import { AmbulanceDispatch } from "./AmbulanceDispatch";
+import type { AmbulanceDispatch } from "./AmbulanceDispatch";
+
+const getAmbulanceDispatch = () =>
+  require("./AmbulanceDispatch").AmbulanceDispatch;
 
 @Entity("ambulances")
 export class Ambulance {
@@ -29,7 +32,7 @@ export class Ambulance {
   isAvailable!: boolean;
 
   @OneToMany(
-    () => AmbulanceDispatch,
+    () => getAmbulanceDispatch(),
     (dispatch: AmbulanceDispatch) => dispatch.ambulance,
   )
   dispatches!: AmbulanceDispatch[];
