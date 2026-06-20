@@ -6,7 +6,8 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from "typeorm";
-import { MedicineOrder } from "./MedicineOrder";
+import type { Relation } from "typeorm";
+import type { MedicineOrder } from "./MedicineOrder";
 
 @Entity("medicine")
 export class Medicine {
@@ -34,8 +35,8 @@ export class Medicine {
   @Column({ type: "varchar", length: 500, nullable: true })
   imageUrl!: string | null;
 
-  @OneToMany(() => MedicineOrder, (order: MedicineOrder) => order.medicine)
-  orders!: MedicineOrder[];
+  @OneToMany("MedicineOrder", "medicine")
+  orders!: Relation<MedicineOrder>[];
 
   @CreateDateColumn({ type: "timestamptz" })
   createdAt!: Date;

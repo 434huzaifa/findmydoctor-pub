@@ -7,7 +7,8 @@ import {
   ManyToOne,
   JoinColumn,
 } from "typeorm";
-import { Ambulance } from "./Ambulance";
+import type { Relation } from "typeorm";
+import type { Ambulance } from "./Ambulance";
 
 export enum DispatchStatus {
   DISPATCHED = "dispatched",
@@ -40,12 +41,12 @@ export class AmbulanceDispatch {
   })
   status!: DispatchStatus;
 
-  @ManyToOne(() => Ambulance, (ambulance: Ambulance) => ambulance.dispatches, {
+  @ManyToOne("Ambulance", "dispatches", {
     onDelete: "CASCADE",
     onUpdate: "CASCADE",
   })
   @JoinColumn({ name: "ambulanceId" })
-  ambulance!: Ambulance;
+  ambulance!: Relation<Ambulance>;
 
   @CreateDateColumn({ type: "timestamptz" })
   createdAt!: Date;

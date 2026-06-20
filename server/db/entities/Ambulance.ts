@@ -6,7 +6,8 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from "typeorm";
-import { AmbulanceDispatch } from "./AmbulanceDispatch";
+import type { Relation } from "typeorm";
+import type { AmbulanceDispatch } from "./AmbulanceDispatch";
 
 @Entity("ambulances")
 export class Ambulance {
@@ -28,11 +29,8 @@ export class Ambulance {
   @Column({ type: "boolean", default: true })
   isAvailable!: boolean;
 
-  @OneToMany(
-    () => AmbulanceDispatch,
-    (dispatch: AmbulanceDispatch) => dispatch.ambulance,
-  )
-  dispatches!: AmbulanceDispatch[];
+  @OneToMany("AmbulanceDispatch", "ambulance")
+  dispatches!: Relation<AmbulanceDispatch>[];
 
   @CreateDateColumn({ type: "timestamptz" })
   createdAt!: Date;
