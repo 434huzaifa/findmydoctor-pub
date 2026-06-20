@@ -7,7 +7,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from "typeorm";
-import type { Ambulance } from "./Ambulance";
+import { Ambulance } from "./Ambulance";
 
 export enum DispatchStatus {
   DISPATCHED = "dispatched",
@@ -40,7 +40,7 @@ export class AmbulanceDispatch {
   })
   status!: DispatchStatus;
 
-  @ManyToOne("Ambulance", (ambulance: Ambulance) => ambulance.dispatches, {
+  @ManyToOne(() => Ambulance, (ambulance: Ambulance) => ambulance.dispatches, {
     onDelete: "CASCADE",
     onUpdate: "CASCADE",
   })

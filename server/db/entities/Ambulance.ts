@@ -6,7 +6,7 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from "typeorm";
-import type { AmbulanceDispatch } from "./AmbulanceDispatch";
+import { AmbulanceDispatch } from "./AmbulanceDispatch";
 
 @Entity("ambulances")
 export class Ambulance {
@@ -28,7 +28,10 @@ export class Ambulance {
   @Column({ type: "boolean", default: true })
   isAvailable!: boolean;
 
-  @OneToMany("AmbulanceDispatch", (dispatch: AmbulanceDispatch) => dispatch.ambulance)
+  @OneToMany(
+    () => AmbulanceDispatch,
+    (dispatch: AmbulanceDispatch) => dispatch.ambulance,
+  )
   dispatches!: AmbulanceDispatch[];
 
   @CreateDateColumn({ type: "timestamptz" })

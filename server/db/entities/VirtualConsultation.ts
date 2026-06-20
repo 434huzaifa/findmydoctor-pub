@@ -7,7 +7,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from "typeorm";
-import type { Doctor } from "./Doctor";
+import { Doctor } from "./Doctor";
 
 export enum ConsultationStatus {
   WAITING = "waiting",
@@ -43,7 +43,7 @@ export class VirtualConsultation {
   @Column({ type: "varchar", length: 500, nullable: true })
   videoLink!: string | null;
 
-  @ManyToOne("Doctor", { onDelete: "CASCADE", onUpdate: "CASCADE" })
+  @ManyToOne(() => Doctor, { onDelete: "CASCADE", onUpdate: "CASCADE" })
   @JoinColumn({ name: "doctorId" })
   doctor!: Doctor;
 
