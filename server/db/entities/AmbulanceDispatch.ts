@@ -40,14 +40,10 @@ export class AmbulanceDispatch {
   })
   status!: DispatchStatus;
 
-  @ManyToOne(
-    () => getAmbulance(),
-    (ambulance: Ambulance) => ambulance.dispatches,
-    {
-      onDelete: "CASCADE",
-      onUpdate: "CASCADE",
-    },
-  )
+  @ManyToOne(() => Ambulance, (ambulance: Ambulance) => ambulance.dispatches, {
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
+  })
   @JoinColumn({ name: "ambulanceId" })
   ambulance!: Ambulance;
 
