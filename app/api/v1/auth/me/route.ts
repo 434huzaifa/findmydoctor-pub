@@ -1,4 +1,4 @@
-﻿
+
 import { NextRequest } from "next/server";
 import { getAuthUser } from "@/server/lib/auth-guard";
 import { ok } from "@/server/lib/response";

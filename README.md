@@ -1,6 +1,6 @@
 # FindMyDoctor (FMD)
 
-A full-stack doctor appointment booking platform for Bangladesh, built with **Next.js 16 App Router**. Patients can browse doctors, book appointments, and track them via phone + OTP. Doctors and admins have role-specific dashboards.
+A full-stack doctor appointment platform for Bangladesh. Patients can browse doctors, book appointments, request home visits, order medicine, track bookings via phone + OTP, and doctors/admins can manage appointments through role-specific dashboards.
 
 ---
 
@@ -9,9 +9,10 @@ A full-stack doctor appointment booking platform for Bangladesh, built with **Ne
 | Layer                 | Technology                               |
 | --------------------- | ---------------------------------------- |
 | Framework             | Next.js 16.2.4 (App Router, Turbopack)   |
-| Language              | TypeScript (strict)                      |
+| Language              | TypeScript 5                             |
+| UI Library            | React 19.2.4                             |
 | Database ORM          | TypeORM 0.3.28                           |
-| Database              | PostgreSQL (Supabase)                    |
+| Database              | PostgreSQL                               |
 | State / Data Fetching | Redux Toolkit + RTK Query                |
 | Styling               | Tailwind CSS v4 + `@tailwindcss/postcss` |
 | Auth                  | JWT — access + refresh tokens            |
@@ -24,25 +25,51 @@ A full-stack doctor appointment booking platform for Bangladesh, built with **Ne
 
 ```
 app/                        # Pages + API routes (App Router)
-  api/v1/                   # REST API route handlers
-  page.tsx                  # Home page
-  doctors/                  # Browse doctors
-  booking/[id]/             # Book appointment
-  payment/                  # Payment summary
-  success/                  # Booking confirmation
-  my-appointments/          # Patient lookup (phone + OTP)
-  login/                    # Doctor / admin login
-  admin/                    # Admin dashboard
-  doctor-dashboard/         # Doctor appointment dashboard
+  api/                       # Health + versioned REST API
+    health/                  # Health check route
+    v1/                      # Versioned API handlers
+      admin/                 # Admin management endpoints
+      ambulances/            # Ambulance listing / dispatch
+      appointments/          # Appointment lookup + OTP flow
+      auth/                  # Login
+      consultation/          # Video consultation queue/actions
+      cron/                  # Cron-protected scheduled jobs
+      doctors/               # Doctor details and lists
+      home-visit/            # Home visit requests
+      lookup/                # Lookup helpers
+      medicine/              # Pharmacy endpoints
+  about/                     # About page
+  admin/                     # Admin dashboard
+  ambulances/                # Ambulance service listing
+  booking/[id]/              # Book doctor appointment
+  checkout/                  # Checkout and payment simulation
+    simulation/[id]/
+  consultation/              # Consultation pages
+    wait/[id]/               # Consultation wait room
+  doctor-dashboard/          # Doctor dashboard
+  doctor-home-service/       # Home visit booking
+  doctors/                   # Doctor directory
+    [id]/                    # Doctor detail page
+  login/                     # Doctor / admin login
+  medicine/                  # Pharmacy storefront
+  my-appointments/           # Appointment lookup by phone + OTP
+  payment/                   # Booking/payment summary
+  pharmacy/                  # Pharmacy ordering experience
+  success/                   # Booking confirmation
 
 components/                 # Shared UI components
-  common/                   # AppModal, StatCard
+  admin/                    # Admin modals/forms/stats
+  common/                   # AppModal, StatCard, etc.
   layout/                   # NavBar, Footer
 
-features/doctors/           # DoctorCard component
-lib/                        # Client-safe utilities (doctor helpers, datetime)
-store/                      # Redux store (RTK Query API slice, auth, booking)
-types/domain.ts             # All shared TypeScript types
+features/                   # Feature-specific UI components
+  doctors/                  # DoctorCard component
+
+lib/                        # Client-safe helper utilities
+modules/                    # Domain modules and hooks
+shared/                     # App-level reusable constants and utilities
+store/                      # Redux + RTK Query store slices
+types/                      # Shared TypeScript domain types
 
 server/                     # Server-only code (never imported on client)
   config/env.ts             # Zod environment validation
@@ -54,14 +81,17 @@ server/                     # Server-only code (never imported on client)
 
 ## Environment Variables
 
-Create a `.env` file at the project root:
+Create a `.env` file at the project root.
 
-| Variable               | Required | Description                                                     |
-| ---------------------- | -------- | --------------------------------------------------------------- |
-| `PG_URL`               | Yes      | PostgreSQL connection string (e.g. Supabase pooler URL)         |
-| `JWT_ACCESS_SECRET`    | Yes      | Secret for signing short-lived access tokens                    |
-| `JWT_REFRESH_SECRET`   | Yes      | Secret for signing refresh tokens                               |
-| `NEXT_PUBLIC_BASE_URL` | No       | Base URL for SSR API calls. Defaults to `http://localhost:3000` |
+| Variable                   | Required | Description                                                               |
+| -------------------------- | -------- | ------------------------------------------------------------------------- |
+| `PG_URL`                   | Yes      | PostgreSQL connection string                                              |
+| `JWT_ACCESS_SECRET`        | Yes      | Secret for signing short-lived access tokens                              |
+| `JWT_REFRESH_SECRET`       | Yes      | Secret for signing refresh tokens                                         |
+| `JWT_ACCESS_EXPIRES_IN`    | No       | Access token expiration, default `15m`                                    |
+| `JWT_REFRESH_EXPIRES_IN`   | No       | Refresh token expiration, default `7d`                                    |
+| `NEXT_PUBLIC_BASE_URL`     | No       | Base URL for SSR/API requests, default `http://localhost:3000`            |
+| `CRON_SECRET`              | No       | Optional bearer token for protected cron endpoint                         |
 
 Example `.env`:
 
@@ -79,8 +109,10 @@ NEXT_PUBLIC_BASE_URL=http://localhost:3000
 ### 1. Install dependencies
 
 ```bash
-npm install
+pnpm install
 ```
+
+> `pnpm` is recommended because this repository uses a workspace lockfile (`pnpm-lock.yaml`).
 
 ### 2. Configure environment
 
@@ -92,16 +124,13 @@ Create `.env` in the project root and fill in your values (see above).
 npm run migration:run
 ```
 
-Creates all PostgreSQL tables: `specialties`, `doctors`, `users`, `appointments`.
-
 ### 4. Seed the database
 
 ```bash
 npm run seed
 ```
 
-Seeds specialties and doctors. Skips automatically if doctors already exist.
-To create admin/doctor user accounts, see [Default Dev Accounts](#default-dev-accounts) below.
+Seeds specialties, doctors, admin + doctor users, medicines, ambulances, sample appointments, virtual consultations, and a sample home visit request.
 
 ### 5. Start the development server
 
@@ -117,62 +146,66 @@ Open [http://localhost:3000](http://localhost:3000).
 
 Migrations are managed with TypeORM CLI via `npm run typeorm`.
 
-| Command                    | Effect                            |
-| -------------------------- | --------------------------------- |
-| `npm run migration:run`    | Apply all pending migrations      |
-| `npm run migration:revert` | Revert the last applied migration |
-
-Three migrations are included in `server/db/migrations/`:
-
-1. **InitialSchema** — Creates `specialties`, `doctors`, `users`, `appointments` tables.
-2. **DoctorRolesAndPayments** — Adds `role` and `doctorId` to `users`; adds `advanceFee`, `usedSeats`, `totalSeats`, and payment fields to `appointments`.
-3. **SpecialtiesAdvanceAndOtpReady** — Adds OTP fields and other refinements to `appointments`.
+| Command                    | Effect                                    |
+| -------------------------- | ------------------------------------------ |
+| `npm run typeorm`          | Run TypeORM CLI                            |
+| `npm run migration:create` | Create a new migration file                |
+| `npm run migration:generate` | Generate a migration from schema diff    |
+| `npm run migration:run`    | Apply pending TypeORM migrations          |
+| `npm run migration:revert` | Revert the last TypeORM migration         |
 
 ---
 
 ## Available NPM Scripts
 
-| Script                     | Purpose                                 |
-| -------------------------- | --------------------------------------- |
-| `npm run dev`              | Start dev server (Turbopack, port 3000) |
-| `npm run build`            | Production build                        |
-| `npm run start`            | Start production server                 |
-| `npm run lint`             | Run ESLint                              |
-| `npm run migration:run`    | Apply pending TypeORM migrations        |
-| `npm run migration:revert` | Revert last TypeORM migration           |
-| `npm run seed`             | Seed specialties and doctors            |
+| Script                     | Purpose                                               |
+| -------------------------- | ----------------------------------------------------- |
+| `npm run dev`              | Start dev server                                      |
+| `npm run build`            | Production build                                      |
+| `npm run start`            | Start production server                               |
+| `npm run lint`             | Run ESLint                                            |
+| `npm run typeorm`          | Run TypeORM CLI                                       |
+| `npm run migration:create` | Create a new migration file                           |
+| `npm run migration:generate` | Generate a migration from schema changes            |
+| `npm run migration:run`    | Apply pending TypeORM migrations                      |
+| `npm run migration:revert` | Revert the last TypeORM migration                     |
+| `npm run seed`             | Seed database with initial data                       |
 
 ---
 
-## Default Dev Accounts
+## Seeded Dev Accounts
 
-> These accounts must be inserted into the `users` table with a bcrypt-hashed password after migrations run.
+The seed script automatically creates admin and doctor users when they do not already exist.
 
-| Role   | Email              | Password    |
-| ------ | ------------------ | ----------- |
-| Admin  | `admin@fmd.local`  | `admin1234` |
-| Doctor | `doctor@fmd.local` | `admin1234` |
+| Role    | Email               | Password    |
+| ------- | ------------------- | ----------- |
+| Admin   | `admin@fmd.local`   | `admin1234` |
+| Doctor  | `doctor1@fmd.local` | `admin1234` |
+| Doctor  | `doctor2@fmd.local` | `admin1234` |
+| Doctor  | `doctor3@fmd.local` | `admin1234` |
+| Doctor  | `doctor4@fmd.local` | `admin1234` |
 
-Only `doctor` and `admin` roles can sign in through the UI. Patients do not need accounts — they look up appointments by phone number + OTP.
+Only `doctor` and `admin` roles can sign in through the UI. Patients do not need accounts — they look up appointments using phone number + OTP.
 
 ---
 
 ## Key Architecture Notes
 
-- **App Router only** — no `pages/` directory. All pages use the `app/` directory.
-- **TypeORM singleton** — `server/db/data-source.ts` uses a `global.__typeormDataSource` variable to survive Turbopack hot-reloads.
-- **RTK Query envelope** — all API responses return `{ success: true, data: T }`. The `baseQuery` in `store/fmdApi.ts` unwraps `data` automatically.
-- **Tailwind CSS v4** — uses `@import "tailwindcss"` in `globals.css`. No `tailwind.config.ts` needed. **Do not** add bare (unlayered) CSS resets (`* { margin: 0 }`) — they override `@layer utilities` and break all spacing utilities.
-- **Auth redirects** — always perform navigation in `useEffect`, never at render time, to avoid SSR errors.
-- **Demo OTP** — the in-memory OTP store in `server/lib/otp-store.ts` always accepts code `1234` for demo purposes.
+- **App Router only** — this repository uses `app/` exclusively, with nested routes and API handlers.
+- **TypeORM singleton** — `server/db/data-source.ts` stores the DataSource on `global.__typeormDataSource` during development to survive hot reloads.
+- **Environment validation** — `server/config/env.ts` parses and validates required environment variables.
+- **RTK Query envelope** — API responses use `{ success: true, data: T }`, and the client API layer unwraps `data`.
+- **Demo OTP** — OTP is mocked in `server/lib/otp-store.ts`; the demo code is always `1234` and the request endpoint returns `otpHint` and TTL.
+- **Cron endpoint** — `app/api/v1/cron/update-next-appointments/route.ts` can be protected with `CRON_SECRET`.
 
+---
 
-## Test Credential
+## Test Credentials
 
-**admin**
-**email:**`admin@fmd.local`
-**password:**`admin1234`
+**Admin**
+- email: `admin@fmd.local`
+- password: `admin1234`
 
-**doctor**
-**email:**`doctor1@fmd.local`
-**password:**`admin1234`
+**Doctor**
+- email: `doctor1@fmd.local`
+- password: `admin1234`

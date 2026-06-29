@@ -17,6 +17,8 @@ import { AddDoctorForm } from "@/components/admin/AddDoctorForm";
 import { AddMedicineForm } from "@/components/admin/AddMedicineForm";
 import { AddAmbulanceForm } from "@/components/admin/AddAmbulanceForm";
 import { EditRowModal } from "@/components/admin/EditRowModal";
+import { Button } from "@/shared/components/ui/Button";
+import Link from "next/link";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -106,6 +108,9 @@ export default function AdminPage() {
             if (activeTable === "ambulance") refetch();
           }}
         />
+        <Link href="/admin/messages">
+          <Button variant="outline">✉️ Support Messages</Button>
+        </Link>
       </div>
 
       {/* Table Selector */}

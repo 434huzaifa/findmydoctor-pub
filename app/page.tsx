@@ -32,10 +32,10 @@ const services = [
 ];
 
 const stats = [
-  { value: "500+", label: "Doctors" },
-  { value: "50K+", label: "Patients" },
-  { value: "100+", label: "Medicines" },
-  { value: "24/7", label: "Support" },
+  { value: "500+", label: "Doctors", href: "/doctors" },
+  { value: "50K+", label: "Patients", href: "/testimonials" },
+  { value: "100+", label: "Medicines", href: "/pharmacy" },
+  { value: "24/7", label: "Support", href: "/support" },
 ];
 
 export default function HomePage() {
@@ -104,9 +104,10 @@ export default function HomePage() {
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-6">
             {stats.map((stat) => (
-              <div
+              <Link
                 key={stat.label}
-                className="rounded-2xl border border-[color:var(--border)] bg-white p-4 sm:p-6 text-center shadow-sm"
+                href={stat.href}
+                className="rounded-2xl border border-[color:var(--border)] bg-white p-4 sm:p-6 text-center shadow-sm transition hover:shadow-md hover:border-[color:var(--teal)]"
               >
                 <p className="text-2xl sm:text-3xl font-extrabold text-[color:var(--teal)]">
                   {stat.value}
@@ -114,7 +115,7 @@ export default function HomePage() {
                 <p className="mt-1 text-xs sm:text-sm font-medium text-[color:var(--text-muted)]">
                   {stat.label}
                 </p>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
