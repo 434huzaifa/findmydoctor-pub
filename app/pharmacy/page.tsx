@@ -324,6 +324,7 @@ export default function PharmacyPage() {
                   className="w-full rounded-lg border px-3 py-2 text-sm"
                   placeholder="Enter OTP"
                 />
+                <p className="mt-3 text-xs text-gray-500">(Dummy OTP is 1234)</p>
               </div>
             )}
 

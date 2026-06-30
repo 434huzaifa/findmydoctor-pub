@@ -59,6 +59,19 @@ export type OtpRequestResult = {
 
 export type OtpVerifyResult = { otpToken: string; expiresInSec: number };
 
+export type AdminMedicineOrdersGrouped = {
+  status: string;
+  label: string;
+  count: number;
+  rows: Record<string, unknown>[];
+};
+
+export type AdminMedicineOrdersResponse = {
+  groups: AdminMedicineOrdersGrouped[];
+  total: number;
+  statuses: string[];
+};
+
 export const fmdApi = createApi({
   reducerPath: "fmdApi",
   baseQuery: async (args, api, extra) => {
@@ -370,6 +383,25 @@ export const fmdApi = createApi({
       invalidatesTags: ["DoctorDashboard"],
     }),
 
+    getAdminMedicineOrders: build.query<
+      AdminMedicineOrdersResponse,
+      void
+    >({
+      query: () => "/admin/medicine/orders",
+      providesTags: ["Medicines"],
+    }),
+    updateAdminMedicineOrderStatus: build.mutation<
+      MedicineOrder,
+      { id: number; status: MedicineOrderStatus }
+    >({
+      query: ({ id, status }) => ({
+        url: `/admin/medicine/orders/${id}`,
+        method: "PATCH",
+        body: { status },
+      }),
+      invalidatesTags: ["Medicines"],
+    }),
+
     // Admin
     getAdminDashboard: build.query<AdminDashboard, void>({
       query: () => "/admin/dashboard",
@@ -560,6 +592,8 @@ export const {
   useVerifyLookupOtpMutation,
   useLazyGetAppointmentsByPhoneQuery,
   useGetDoctorDashboardQuery,
+  useGetAdminMedicineOrdersQuery,
+  useUpdateAdminMedicineOrderStatusMutation,
   useLazyGetDoctorDashboardQuery,
   useMarkAppointmentPaidMutation,
   useGetAdminDashboardQuery,
