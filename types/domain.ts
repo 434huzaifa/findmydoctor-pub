@@ -59,7 +59,9 @@ export type DoctorSort =
   | "fee_asc"
   | "fee_desc"
   | "booked_desc"
-  | "booked_asc";
+  | "booked_asc"
+  | "rating_asc"
+  | "rating_desc";
 
 export type DoctorListParams = {
   page?: string;
