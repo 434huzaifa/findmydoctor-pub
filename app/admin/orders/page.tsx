@@ -69,10 +69,10 @@ export default function AdminOrdersPage() {
           <h1 className="text-2xl font-bold text-gray-900">Manage Orders</h1>
           <p className="text-sm text-gray-500">Track and update medicine order statuses by section</p>
         </div>
-        <div className="rounded-2xl bg-gradient-to-r from-indigo-600 to-blue-600 px-5 py-4 text-white shadow-lg">
+        {/* <div className="rounded-2xl bg-gradient-to-r from-indigo-600 to-blue-600 px-5 py-4 text-white shadow-lg">
           <p className="text-xs uppercase tracking-[0.2em] text-white/70">Total Orders</p>
           <p className="mt-1 text-3xl font-black">{data?.total ?? 0}</p>
-        </div>
+        </div> */}
       </div>
 
       {isLoading ? (
