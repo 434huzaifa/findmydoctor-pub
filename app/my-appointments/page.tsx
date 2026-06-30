@@ -63,7 +63,6 @@ export default function MyCornerPage() {
           <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold text-white">🏠 My Corner</h1>
           <p className="mt-2 text-sm sm:text-base text-white/80">Enter your phone number to see all your activities — appointments, medicine orders, ambulance calls, and home visits.</p>
           <div className="mt-4 inline-block rounded-full bg-white/20 px-4 py-1 text-xs font-medium text-white">
-            💡 Dummy OTP for verification: <span className="font-bold">1234</span>
           </div>
 
           <form onSubmit={handleSearch} className="mt-6 max-w-md mx-auto space-y-3">
@@ -95,9 +94,8 @@ export default function MyCornerPage() {
             <div className="flex flex-wrap gap-2 mb-6">
               {TABS.map((tab) => (
                 <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                  className={`flex items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-medium transition ${
-                    activeTab === tab.key ? "bg-indigo-600 text-white shadow" : "bg-white border text-gray-600 hover:border-indigo-300"
-                  }`}>
+                  className={`flex items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-medium transition ${activeTab === tab.key ? "bg-indigo-600 text-white shadow" : "bg-white border text-gray-600 hover:border-indigo-300"
+                    }`}>
                   <span>{tab.icon}</span> {tab.label}
                 </button>
               ))}

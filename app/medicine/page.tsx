@@ -382,16 +382,15 @@ function MedicineList() {
                         ) : (
                             <div className="text-center py-4">
                                 <p className="text-sm text-(--text-muted) mb-4">Please enter the 4-digit OTP sent to your phone to confirm your medicine order.</p>
-                                <input 
-                                    type="text" 
-                                    maxLength={4} 
-                                    value={otpValue} 
-                                    onChange={(e) => setOtpValue(e.target.value)} 
-                                    className="w-32 text-center text-2xl tracking-widest rounded-lg border-2 border-(--teal) px-2 py-2 outline-none" 
+                                <input
+                                    type="text"
+                                    maxLength={4}
+                                    value={otpValue}
+                                    onChange={(e) => setOtpValue(e.target.value)}
+                                    className="w-32 text-center text-2xl tracking-widest rounded-lg border-2 border-(--teal) px-2 py-2 outline-none"
                                     placeholder="0000"
                                     autoFocus
                                 />
-                                <p className="mt-4 text-xs text-(--text-muted)">(Dummy OTP is 1234)</p>
                             </div>
                         )}
                     </form>
