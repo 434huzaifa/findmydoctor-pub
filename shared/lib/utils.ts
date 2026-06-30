@@ -118,9 +118,13 @@ export function percentage(value: number, total: number): number {
 
 // ─── Validation ─────────────────────────────────────────────────────────────
 
+export function normalizePhoneInput(phone: string): string {
+  return phone.replace(/\D/g, "").slice(0, 11);
+}
+
 export function isValidPhone(phone: string): boolean {
-  const cleaned = phone.replace(/\D/g, "");
-  return cleaned.length >= 10 && cleaned.length <= 14;
+  const cleaned = normalizePhoneInput(phone);
+  return cleaned.length === 11;
 }
 
 // ─── Delay ──────────────────────────────────────────────────────────────────

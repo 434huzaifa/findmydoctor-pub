@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { usePhoneLookupQuery } from "@/store/fmdApi";
+import { isValidPhone, normalizePhoneInput } from "@/shared/lib/utils";
 
 type TabType = "appointments" | "orders" | "ambulance" | "homevisit";
 
@@ -26,6 +27,7 @@ export default function MyCornerPage() {
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     if (!phone.trim()) return;
+    if (!isValidPhone(phone)) return;
     setSubmitted(phone.trim());
     setPages({ appointments: 1, orders: 1, ambulance: 1, homevisit: 1 });
   }
@@ -48,7 +50,7 @@ export default function MyCornerPage() {
           </div>
 
           <form onSubmit={handleSearch} className="mt-6 flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-            <input type="tel" placeholder="Enter your phone number..." value={phone} onChange={(e) => setPhone(e.target.value)} required
+            <input type="tel" inputMode="numeric" maxLength={11} placeholder="Enter your phone number..." value={phone} onChange={(e) => setPhone(normalizePhoneInput(e.target.value))} required
               className="flex-1 rounded-xl border-0 bg-white/95 px-4 py-3 text-sm shadow-lg outline-none" />
             <button type="submit" className="rounded-xl bg-white px-6 py-3 text-sm font-semibold text-indigo-700 shadow-lg hover:bg-indigo-50">
               🔍 Search

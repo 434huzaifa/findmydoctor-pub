@@ -11,6 +11,7 @@ import {
 import { useAppDispatch } from "@/store/hooks";
 import { setMedicineOrderInfo } from "@/store/bookingSlice";
 import type { Medicine, MedicineListParams } from "@/types/domain";
+import { isValidPhone, normalizePhoneInput } from "@/shared/lib/utils";
 
 const PAGE_SIZE = 12;
 const SORT_OPTIONS = [
@@ -107,6 +108,11 @@ function MedicineList() {
     async function submitOrder(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         if (!selectedMedicine) return;
+
+        if (!isValidPhone(guestPhone)) {
+            toast.error("Phone number must be exactly 11 digits.");
+            return;
+        }
 
         if (otpStep === "info") {
             setOtpStep("otp");
@@ -325,8 +331,10 @@ function MedicineList() {
                                     </label>
                                     <input
                                         type="tel"
+                                        inputMode="numeric"
+                                        maxLength={11}
                                         value={guestPhone}
-                                        onChange={(e) => setGuestPhone(e.target.value)}
+                                        onChange={(e) => setGuestPhone(normalizePhoneInput(e.target.value))}
                                         className="w-full rounded-lg border border-(--border) px-3 py-2 text-sm focus:border-(--teal) focus:outline-none"
                                         placeholder="01XXXXXXXXX"
                                     />

@@ -19,6 +19,7 @@ import {
 } from "@/store/cartSlice";
 import { AppModal } from "@/components/common/AppModal";
 import type { Medicine, MedicineListParams } from "@/types/domain";
+import { isValidPhone, normalizePhoneInput } from "@/shared/lib/utils";
 
 const PAGE_SIZE = 12;
 
@@ -75,6 +76,10 @@ export default function PharmacyPage() {
     e.preventDefault();
     if (!guestPhone.trim() || !address.trim()) {
       toast.error("Phone and address are required");
+      return;
+    }
+    if (!isValidPhone(guestPhone)) {
+      toast.error("Phone number must be exactly 11 digits.");
       return;
     }
 
@@ -280,7 +285,7 @@ export default function PharmacyPage() {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Phone Number *</label>
-              <input type="tel" required value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)}
+              <input type="tel" inputMode="numeric" maxLength={11} required value={guestPhone} onChange={(e) => setGuestPhone(normalizePhoneInput(e.target.value))}
                 className="w-full rounded-lg border px-3 py-2 text-sm" placeholder="+880 1XXX-XXXXXX" />
             </div>
             <div>

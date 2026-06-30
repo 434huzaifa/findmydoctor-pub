@@ -7,6 +7,7 @@ import {
   useCallAmbulanceMutation,
 } from "@/store/fmdApi";
 import { AppModal } from "@/components/common/AppModal";
+import { isValidPhone, normalizePhoneInput } from "@/shared/lib/utils";
 import type { Ambulance, AmbulanceListParams } from "@/types/domain";
 
 export default function AmbulancesPage() {
@@ -40,6 +41,10 @@ export default function AmbulancesPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!selectedAmbulance) return;
+    if (!isValidPhone(callerPhone)) {
+      toast.error("Phone number must be exactly 11 digits.");
+      return;
+    }
 
     try {
       await callAmbulance({
@@ -195,9 +200,11 @@ export default function AmbulancesPage() {
               </label>
               <input
                 type="tel"
+                inputMode="numeric"
+                maxLength={11}
                 required
                 value={callerPhone}
-                onChange={(e) => setCallerPhone(e.target.value)}
+                onChange={(e) => setCallerPhone(normalizePhoneInput(e.target.value))}
                 className="w-full rounded-lg border border-[color:var(--border)] px-3 py-2 text-sm focus:border-red-500 focus:outline-none"
                 placeholder="+880 1XXX-XXXXXX"
               />

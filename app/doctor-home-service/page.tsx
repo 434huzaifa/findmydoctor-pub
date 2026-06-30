@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useCreateHomeVisitRequestMutation } from "@/store/fmdApi";
+import { isValidPhone, normalizePhoneInput } from "@/shared/lib/utils";
 
 export default function DoctorHomeServicePage() {
   const [step, setStep] = useState(1);
@@ -17,6 +18,11 @@ export default function DoctorHomeServicePage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+
+    if (!isValidPhone(phone)) {
+      toast.error("Phone number must be exactly 11 digits.");
+      return;
+    }
 
     try {
       const result = await createRequest({
@@ -93,9 +99,11 @@ export default function DoctorHomeServicePage() {
                   </label>
                   <input
                     type="tel"
+                    inputMode="numeric"
+                    maxLength={11}
                     required
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) => setPhone(normalizePhoneInput(e.target.value))}
                     className="w-full rounded-xl border border-[color:var(--border)] px-4 py-3 text-sm focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-100"
                     placeholder="+880 1XXX-XXXXXX"
                   />

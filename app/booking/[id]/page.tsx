@@ -10,6 +10,7 @@ import {
   useCreateAppointmentMutation,
 } from "@/store/fmdApi";
 import { AppModal } from "@/components/common/AppModal";
+import { isValidPhone, normalizePhoneInput } from "@/shared/lib/utils";
 
 export default function BookingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -59,6 +60,10 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
   async function handleJoinQueue(e: FormEvent) {
     e.preventDefault();
     if (!doctor || !vName.trim() || !vPhone.trim()) return;
+    if (!isValidPhone(vPhone)) {
+      toast.error("Phone number must be exactly 11 digits.");
+      return;
+    }
     try {
       const result = await joinQueue({ doctorId: doctor.id, patientName: vName.trim(), patientPhone: vPhone.trim() }).unwrap();
       toast.success("Joined queue!");
@@ -72,6 +77,10 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
   async function handleBookAppointment(e: FormEvent) {
     e.preventDefault();
     if (!doctor || !bName.trim() || !bPhone.trim() || !bDate || !bSlot) return;
+    if (!isValidPhone(bPhone)) {
+      toast.error("Phone number must be exactly 11 digits.");
+      return;
+    }
 
     if (otpStep === "info") {
       setOtpStep("otp");
@@ -222,7 +231,7 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Phone Number *</label>
-            <input type="tel" required value={vPhone} onChange={(e) => setVPhone(e.target.value)} className="w-full rounded-lg border px-3 py-2.5 text-sm" placeholder="+880 1XXX-XXXXXX" />
+            <input type="tel" inputMode="numeric" maxLength={11} required value={vPhone} onChange={(e) => setVPhone(normalizePhoneInput(e.target.value))} className="w-full rounded-lg border px-3 py-2.5 text-sm" placeholder="+880 1XXX-XXXXXX" />
           </div>
         </form>
       </AppModal>
@@ -254,7 +263,7 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Phone Number *</label>
-                  <input type="tel" required value={bPhone} onChange={(e) => setBPhone(e.target.value)} className="w-full rounded-lg border px-3 py-2.5 text-sm" placeholder="+880 1XXX-XXXXXX" />
+                  <input type="tel" inputMode="numeric" maxLength={11} required value={bPhone} onChange={(e) => setBPhone(normalizePhoneInput(e.target.value))} className="w-full rounded-lg border px-3 py-2.5 text-sm" placeholder="+880 1XXX-XXXXXX" />
                 </div>
               </div>
 
