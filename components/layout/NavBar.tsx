@@ -34,7 +34,7 @@ export function NavBar() {
   ];
 
   const authLinks = [
-    ...(user?.role === "doctor" || user?.role === "admin"
+    ...(user?.role === "doctor"
       ? [{ href: "/doctor-dashboard", label: "Dashboard" }]
       : []),
     ...(user?.role === "admin"

@@ -71,17 +71,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             );
           })}
         </nav>
-
-        <div className="p-4 border-t border-gray-200">
-          <Button
-            variant="outline"
-            className="w-full justify-start gap-3 text-red-600 hover:text-red-700 hover:bg-red-50"
-            onClick={() => dispatch(logout())}
-          >
-            <span className="text-lg">🚪</span>
-            Logout
-          </Button>
-        </div>
       </aside>
 
       {/* Main Content */}
