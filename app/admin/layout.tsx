@@ -13,6 +13,11 @@ const MENU_ITEMS = [
     icon: "📊"
   },
   {
+    label: "Orders",
+    href: "/admin/orders",
+    icon: "📦"
+  },
+  {
     label: "Ambulances",
     href: "/admin/ambulances",
     icon: "🚑"

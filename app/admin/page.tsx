@@ -94,17 +94,30 @@ export default function AdminPage() {
           </Link>
 
           {/* Placeholder for future management cards */}
-          <div className="p-6 bg-gray-50 border border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center text-center">
-            <div className="p-3 bg-gray-200 text-gray-500 rounded-xl text-2xl mb-2">🩺</div>
-            <h3 className="font-medium text-gray-600">Doctor Management</h3>
-            <p className="text-xs text-gray-400">Coming Soon</p>
-          </div>
-
-          <div className="p-6 bg-gray-50 border border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center text-center">
-            <div className="p-3 bg-gray-200 text-gray-500 rounded-xl text-2xl mb-2">💊</div>
-            <h3 className="font-medium text-gray-600">Medicine Inventory</h3>
-            <p className="text-xs text-gray-400">Coming Soon</p>
-          </div>
+          <Link href="/admin/doctors" className="group p-6 bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-all hover:border-blue-500">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="p-3 bg-red-100 text-red-600 rounded-xl text-2xl">🩺</div>
+              <div>
+                <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition">Doctor Management</h3>
+                <p className="text-sm text-gray-500">Manage Doctor</p>
+              </div>
+            </div>
+            <Button variant="outline" className="w-full justify-between py-2">
+              Manage Doctors <span>→</span>
+            </Button>
+          </Link>
+          <Link href="/admin/medicines" className="group p-6 bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-all hover:border-blue-500">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="p-3 bg-red-100 text-red-600 rounded-xl text-2xl">💊</div>
+              <div>
+                <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition">Medicine Inventory</h3>
+                <p className="text-sm text-gray-500">Manage Medicine</p>
+              </div>
+            </div>
+            <Button variant="outline" className="w-full justify-between py-2">
+              Manage Inventory <span>→</span>
+            </Button>
+          </Link>
         </div>
       </section>
 
