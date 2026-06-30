@@ -27,6 +27,8 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
 
   // In-person booking modal
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [otpStep, setOtpStep] = useState<"info" | "otp">("info");
+  const [otpValue, setOtpValue] = useState("");
   const [bName, setBName] = useState("");
   const [bPhone, setBPhone] = useState("");
   const [bDate, setBDate] = useState("");
@@ -71,6 +73,16 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
     e.preventDefault();
     if (!doctor || !bName.trim() || !bPhone.trim() || !bDate || !bSlot) return;
 
+    if (otpStep === "info") {
+      setOtpStep("otp");
+      return;
+    }
+
+    if (otpValue !== "1234") {
+      toast.error("Invalid OTP. Please enter the correct dummy OTP (1234).");
+      return;
+    }
+
     try {
       // Fake payment for online
       if (bPaymentMethod === "online") {
@@ -92,6 +104,8 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
 
       toast.success("Appointment booked successfully!");
       setShowBookingModal(false);
+      setOtpStep("info");
+      setOtpValue("");
       router.push("/success");
     } catch (err: unknown) {
       toast.error((err as { data?: { message?: string } })?.data?.message ?? "Booking failed");
@@ -214,83 +228,101 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
       </AppModal>
 
       {/* In-Person Booking Modal */}
-      <AppModal isOpen={showBookingModal} onClose={() => setShowBookingModal(false)} title="Book Appointment" size="lg"
+      <AppModal isOpen={showBookingModal} onClose={() => { setShowBookingModal(false); setOtpStep("info"); setOtpValue(""); }} title={otpStep === "info" ? "Book Appointment" : "OTP Verification"} size="lg"
         footer={
           <>
-            <button onClick={() => setShowBookingModal(false)} className="rounded-lg border px-4 py-2 text-sm">Cancel</button>
+            <button onClick={() => { setShowBookingModal(false); setOtpStep("info"); setOtpValue(""); }} className="rounded-lg border px-4 py-2 text-sm">Cancel</button>
             <button type="submit" form="booking-form" disabled={isBooking}
               className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-semibold text-white disabled:opacity-50">
-              {isBooking ? "Booking..." : bPaymentMethod === "online" ? `💳 Pay ৳${payableAmount} & Book` : "📅 Book Now"}
+              {isBooking ? "Booking..." : otpStep === "info" ? (bPaymentMethod === "online" ? `💳 Pay ৳${payableAmount} & Book` : "📅 Book Now") : "Verify & Confirm"}
             </button>
           </>
         }>
         <form id="booking-form" onSubmit={handleBookAppointment} className="space-y-4">
-          <div className="rounded-xl bg-blue-50 p-4">
-            <p className="font-semibold text-blue-900">{doctor.name}</p>
-            <p className="text-sm text-blue-700">{doctor.specialty?.name} · {doctor.hospital}</p>
-            <p className="text-lg font-bold text-blue-600 mt-1">৳{doctor.fee}</p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Patient Name *</label>
-              <input type="text" required value={bName} onChange={(e) => setBName(e.target.value)} className="w-full rounded-lg border px-3 py-2.5 text-sm" placeholder="Full name" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Phone Number *</label>
-              <input type="tel" required value={bPhone} onChange={(e) => setBPhone(e.target.value)} className="w-full rounded-lg border px-3 py-2.5 text-sm" placeholder="+880 1XXX-XXXXXX" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Appointment Date *</label>
-              <input type="date" required min={today} value={bDate} onChange={(e) => setBDate(e.target.value)} className="w-full rounded-lg border px-3 py-2.5 text-sm" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Time Slot *</label>
-              <select required value={bSlot} onChange={(e) => setBSlot(e.target.value)} className="w-full rounded-lg border px-3 py-2.5 text-sm">
-                {timeSlots.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Payment Method</label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="radio" checked={bPaymentMethod === "online"} onChange={() => setBPaymentMethod("online")} />
-                <span className="text-sm">Online Payment</span>
-              </label>
-              {!hasAdvance && (
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" checked={bPaymentMethod === "cash"} onChange={() => setBPaymentMethod("cash")} />
-                  <span className="text-sm">Cash at Clinic</span>
-                </label>
-              )}
-            </div>
-          </div>
-
-          {hasAdvance && bPaymentMethod === "online" && (
-            <div>
-              <label className="block text-sm font-medium mb-2">Payment Amount</label>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" checked={bPaymentChoice === "full"} onChange={() => setBPaymentChoice("full")} />
-                  <span className="text-sm">Full: ৳{doctor.fee}</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" checked={bPaymentChoice === "advance"} onChange={() => setBPaymentChoice("advance")} />
-                  <span className="text-sm">Advance: ৳{doctor.advanceFee}</span>
-                </label>
+          {otpStep === "info" ? (
+            <>
+              <div className="rounded-xl bg-blue-50 p-4">
+                <p className="font-semibold text-blue-900">{doctor.name}</p>
+                <p className="text-sm text-blue-700">{doctor.specialty?.name} · {doctor.hospital}</p>
+                <p className="text-lg font-bold text-blue-600 mt-1">৳{doctor.fee}</p>
               </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Patient Name *</label>
+                  <input type="text" required value={bName} onChange={(e) => setBName(e.target.value)} className="w-full rounded-lg border px-3 py-2.5 text-sm" placeholder="Full name" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Phone Number *</label>
+                  <input type="tel" required value={bPhone} onChange={(e) => setBPhone(e.target.value)} className="w-full rounded-lg border px-3 py-2.5 text-sm" placeholder="+880 1XXX-XXXXXX" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Appointment Date *</label>
+                  <input type="date" required min={today} value={bDate} onChange={(e) => setBDate(e.target.value)} className="w-full rounded-lg border px-3 py-2.5 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Time Slot *</label>
+                  <select required value={bSlot} onChange={(e) => setBSlot(e.target.value)} className="w-full rounded-lg border px-3 py-2.5 text-sm">
+                    {timeSlots.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Payment Method</label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" checked={bPaymentMethod === "online"} onChange={() => setBPaymentMethod("online")} />
+                    <span className="text-sm">Online Payment</span>
+                  </label>
+                  {!hasAdvance && (
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" checked={bPaymentMethod === "cash"} onChange={() => setBPaymentMethod("cash")} />
+                      <span className="text-sm">Cash at Clinic</span>
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {hasAdvance && bPaymentMethod === "online" && (
+                <div>
+                  <label className="block text-sm font-medium mb-2">Payment Amount</label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" checked={bPaymentChoice === "full"} onChange={() => setBPaymentChoice("full")} />
+                      <span className="text-sm">Full: ৳{doctor.fee}</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" checked={bPaymentChoice === "advance"} onChange={() => setBPaymentChoice("advance")} />
+                      <span className="text-sm">Advance: ৳{doctor.advanceFee}</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              <div className="rounded-lg bg-gray-50 p-3 flex justify-between text-sm">
+                <span>{bPaymentMethod === "cash" ? "Pay at clinic" : "Pay now"}</span>
+                <span className="font-bold">৳{payableAmount}</span>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-sm text-gray-600 mb-4">Please enter the 4-digit OTP sent to your phone to confirm your appointment.</p>
+              <input 
+                type="text" 
+                maxLength={4} 
+                value={otpValue} 
+                onChange={(e) => setOtpValue(e.target.value)} 
+                className="w-32 text-center text-2xl tracking-widest rounded-lg border-2 border-blue-600 px-2 py-2 outline-none" 
+                placeholder="0000"
+                autoFocus
+              />
+              <p className="mt-4 text-xs text-gray-400">(Dummy OTP is 1234)</p>
             </div>
           )}
-
-          <div className="rounded-lg bg-gray-50 p-3 flex justify-between text-sm">
-            <span>{bPaymentMethod === "cash" ? "Pay at clinic" : "Pay now"}</span>
-            <span className="font-bold">৳{payableAmount}</span>
-          </div>
         </form>
       </AppModal>
     </div>

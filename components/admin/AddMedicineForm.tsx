@@ -13,8 +13,8 @@ const medicineSchema = z.object({
   description: z.string().optional(),
   company: z.string().optional(),
   class: z.string().optional(),
-  price: z.coerce.number().default(0),
-  stock: z.coerce.number().default(0),
+  price: z.coerce.number().min(0, "Price cannot be negative").default(0),
+  stock: z.coerce.number().min(0, "Stock cannot be negative").default(0),
 });
 
 type MedicineForm = z.input<typeof medicineSchema>;

@@ -1,4 +1,4 @@
-﻿import { NextRequest } from "next/server";
+import { NextRequest } from "next/server";
 import { getDataSource, Doctor } from "@/server/db/data-source";
 import { ok } from "@/server/lib/response";
 import { handleError } from "@/server/lib/handle-error";
@@ -15,6 +15,8 @@ const SORT_OPTIONS = new Set<DoctorSort>([
   "fee_desc",
   "booked_desc",
   "booked_asc",
+  "rating_asc",
+  "rating_desc",
 ]);
 const AVAILABILITY_OPTIONS = new Set<DoctorAvailability | "">([
   "",
@@ -86,6 +88,10 @@ export async function GET(req: NextRequest) {
       filtered.sort((a, b) => b.usedSeats - a.usedSeats);
     } else if (sortBy === "booked_asc") {
       filtered.sort((a, b) => a.usedSeats - b.usedSeats);
+    } else if (sortBy === "rating_desc") {
+      filtered.sort((a, b) => Number(b.rating) - Number(a.rating));
+    } else if (sortBy === "rating_asc") {
+      filtered.sort((a, b) => Number(a.rating) - Number(b.rating));
     }
 
     const total = filtered.length;

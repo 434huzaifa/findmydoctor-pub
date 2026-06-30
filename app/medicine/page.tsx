@@ -73,6 +73,8 @@ function MedicineList() {
     const [companyFilter, setCompanyFilter] = useState("");
     const [selectedMedicine, setSelectedMedicine] = useState<Medicine | null>(null);
     const [quantity, setQuantity] = useState(1);
+    const [otpStep, setOtpStep] = useState<"info" | "otp">("info");
+    const [otpValue, setOtpValue] = useState("");
     const [guestPhone, setGuestPhone] = useState("");
     const [address, setAddress] = useState("");
     const [paymentMethod, setPaymentMethod] = useState<"online" | "cash">("online");
@@ -106,6 +108,16 @@ function MedicineList() {
         event.preventDefault();
         if (!selectedMedicine) return;
 
+        if (otpStep === "info") {
+            setOtpStep("otp");
+            return;
+        }
+
+        if (otpValue !== "1234") {
+            toast.error("Invalid OTP. Please enter the correct dummy OTP (1234).");
+            return;
+        }
+
         try {
             if (paymentMethod === "online") {
                 toast.loading("Processing mock online payment...");
@@ -123,6 +135,8 @@ function MedicineList() {
             dispatch(setMedicineOrderInfo(result));
             router.push("/success");
             resetOrderForm();
+            setOtpStep("info");
+            setOtpValue("");
         } catch (error: unknown) {
             toast.error(
                 (error as { data?: { message?: string } })?.data?.message ??
@@ -253,8 +267,10 @@ function MedicineList() {
                 onClose={() => {
                     setSelectedMedicine(null);
                     resetOrderForm();
+                    setOtpStep("info");
+                    setOtpValue("");
                 }}
-                title={selectedMedicine ? `Order ${selectedMedicine.name}` : "Order Medicine"}
+                title={otpStep === "info" ? (selectedMedicine ? `Order ${selectedMedicine.name}` : "Order Medicine") : "OTP Verification"}
                 footer={
                     <>
                         <button
@@ -262,6 +278,8 @@ function MedicineList() {
                             onClick={() => {
                                 setSelectedMedicine(null);
                                 resetOrderForm();
+                                setOtpStep("info");
+                                setOtpValue("");
                             }}
                             className="rounded-lg border border-(--border) px-4 py-1.5 text-sm"
                         >
@@ -273,7 +291,7 @@ function MedicineList() {
                             disabled={isOrdering}
                             className="rounded-lg bg-(--teal) px-4 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
                         >
-                            {isOrdering ? "Placing order…" : "Place order"}
+                            {isOrdering ? "Placing order…" : otpStep === "info" ? "Place order" : "Verify & Confirm"}
                         </button>
                     </>
                 }
@@ -284,72 +302,90 @@ function MedicineList() {
                         onSubmit={submitOrder}
                         className="space-y-4"
                     >
-                        <p className="text-sm text-(--text-muted)">
-                            This order will be placed for <strong>{selectedMedicine.name}</strong>.
-                        </p>
-                        <div className="space-y-2">
-                            <label className="block text-xs font-medium text-(--text-muted)">
-                                Quantity
-                            </label>
-                            <input
-                                type="number"
-                                min="1"
-                                value={quantity}
-                                onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
-                                className="w-full rounded-lg border border-(--border) px-3 py-2 text-sm focus:border-(--teal) focus:outline-none"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="block text-xs font-medium text-(--text-muted)">
-                                Phone number
-                            </label>
-                            <input
-                                type="tel"
-                                value={guestPhone}
-                                onChange={(e) => setGuestPhone(e.target.value)}
-                                className="w-full rounded-lg border border-(--border) px-3 py-2 text-sm focus:border-(--teal) focus:outline-none"
-                                placeholder="01XXXXXXXXX"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="block text-xs font-medium text-(--text-muted)">
-                                Delivery address
-                            </label>
-                            <textarea
-                                value={address}
-                                onChange={(e) => setAddress(e.target.value)}
-                                rows={3}
-                                className="w-full rounded-lg border border-(--border) px-3 py-2 text-sm focus:border-(--teal) focus:outline-none"
-                                placeholder="House, road, area, city, postal code"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <p className="text-xs uppercase tracking-[0.2em] text-(--text-muted)">Payment method</p>
-                            <div className="flex flex-col gap-2">
-                                <label className="inline-flex items-center gap-2 text-sm">
+                        {otpStep === "info" ? (
+                            <>
+                                <p className="text-sm text-(--text-muted)">
+                                    This order will be placed for <strong>{selectedMedicine.name}</strong>.
+                                </p>
+                                <div className="space-y-2">
+                                    <label className="block text-xs font-medium text-(--text-muted)">
+                                        Quantity
+                                    </label>
                                     <input
-                                        type="radio"
-                                        name="paymentMethod"
-                                        value="online"
-                                        checked={paymentMethod === "online"}
-                                        onChange={() => setPaymentMethod("online")}
-                                        className="h-4 w-4 text-(--teal)"
+                                        type="number"
+                                        min="1"
+                                        value={quantity}
+                                        onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
+                                        className="w-full rounded-lg border border-(--border) px-3 py-2 text-sm focus:border-(--teal) focus:outline-none"
                                     />
-                                    Mock online payment
-                                </label>
-                                <label className="inline-flex items-center gap-2 text-sm">
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="block text-xs font-medium text-(--text-muted)">
+                                        Phone number
+                                    </label>
                                     <input
-                                        type="radio"
-                                        name="paymentMethod"
-                                        value="cash"
-                                        checked={paymentMethod === "cash"}
-                                        onChange={() => setPaymentMethod("cash")}
-                                        className="h-4 w-4 text-(--teal)"
+                                        type="tel"
+                                        value={guestPhone}
+                                        onChange={(e) => setGuestPhone(e.target.value)}
+                                        className="w-full rounded-lg border border-(--border) px-3 py-2 text-sm focus:border-(--teal) focus:outline-none"
+                                        placeholder="01XXXXXXXXX"
                                     />
-                                    Cash on delivery
-                                </label>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="block text-xs font-medium text-(--text-muted)">
+                                        Delivery address
+                                    </label>
+                                    <textarea
+                                        value={address}
+                                        onChange={(e) => setAddress(e.target.value)}
+                                        rows={3}
+                                        className="w-full rounded-lg border border-(--border) px-3 py-2 text-sm focus:border-(--teal) focus:outline-none"
+                                        placeholder="House, road, area, city, postal code"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <p className="text-xs uppercase tracking-[0.2em] text-(--text-muted)">Payment method</p>
+                                    <div className="flex flex-col gap-2">
+                                        <label className="inline-flex items-center gap-2 text-sm">
+                                            <input
+                                                type="radio"
+                                                name="paymentMethod"
+                                                value="online"
+                                                checked={paymentMethod === "online"}
+                                                onChange={() => setPaymentMethod("online")}
+                                                className="h-4 w-4 text-(--teal)"
+                                            />
+                                            Mock online payment
+                                        </label>
+                                        <label className="inline-flex items-center gap-2 text-sm">
+                                            <input
+                                                type="radio"
+                                                name="paymentMethod"
+                                                value="cash"
+                                                checked={paymentMethod === "cash"}
+                                                onChange={() => setPaymentMethod("cash")}
+                                                className="h-4 w-4 text-(--teal)"
+                                            />
+                                            Cash on delivery
+                                        </label>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="text-center py-4">
+                                <p className="text-sm text-(--text-muted) mb-4">Please enter the 4-digit OTP sent to your phone to confirm your medicine order.</p>
+                                <input 
+                                    type="text" 
+                                    maxLength={4} 
+                                    value={otpValue} 
+                                    onChange={(e) => setOtpValue(e.target.value)} 
+                                    className="w-32 text-center text-2xl tracking-widest rounded-lg border-2 border-(--teal) px-2 py-2 outline-none" 
+                                    placeholder="0000"
+                                    autoFocus
+                                />
+                                <p className="mt-4 text-xs text-(--text-muted)">(Dummy OTP is 1234)</p>
                             </div>
-                        </div>
+                        )}
                     </form>
                 )}
             </AppModal>

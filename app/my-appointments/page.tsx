@@ -43,6 +43,9 @@ export default function MyCornerPage() {
         <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold text-white">🏠 My Corner</h1>
           <p className="mt-2 text-sm sm:text-base text-white/80">Enter your phone number to see all your activities — appointments, medicine orders, ambulance calls, and home visits.</p>
+          <div className="mt-4 inline-block rounded-full bg-white/20 px-4 py-1 text-xs font-medium text-white">
+            💡 Dummy OTP for verification: <span className="font-bold">1234</span>
+          </div>
 
           <form onSubmit={handleSearch} className="mt-6 flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
             <input type="tel" placeholder="Enter your phone number..." value={phone} onChange={(e) => setPhone(e.target.value)} required

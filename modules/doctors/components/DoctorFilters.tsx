@@ -33,7 +33,7 @@ export function DoctorFiltersPanel({
   const specialtyOptions = [
     { value: "", label: "All Specialties" },
     ...specialties.map((s) => ({
-      value: s.name,
+      value: s.id.toString(),
       label: `${s.icon} ${s.name}`,
     })),
   ];
