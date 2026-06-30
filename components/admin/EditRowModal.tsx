@@ -6,12 +6,17 @@ import { useUpdateTableRowMutation } from "@/store/fmdApi";
 import { AppModal } from "../common/AppModal";
 import type { SchemaColumn } from "@/store/fmdApi";
 
+type EditableColumn = Partial<SchemaColumn> & {
+  name: string;
+  label?: string;
+};
+
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   table: string;
   row: Record<string, unknown>;
-  columns: SchemaColumn[];
+  columns: EditableColumn[];
   onSaved: () => void;
 }
 
@@ -98,7 +103,7 @@ export function EditRowModal({
         {editableColumns.map((col) => (
           <div key={col.name}>
             <label className="text-sm font-medium text-[color:var(--text)]">
-              {col.name}
+              {col.label ?? col.name}
               {col.nullable && (
                 <span className="text-xs text-gray-400 ml-1">(optional)</span>
               )}
