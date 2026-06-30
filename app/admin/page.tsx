@@ -128,11 +128,10 @@ export default function AdminPage() {
                 setActiveTable(t.key);
                 setPage(1);
               }}
-              className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
-                activeTable === t.key
+              className={`rounded-lg px-3 py-2 text-sm font-medium transition ${activeTable === t.key
                   ? "bg-blue-600 text-white"
                   : "bg-white border border-gray-200 text-gray-600 hover:border-blue-500"
-              }`}
+                }`}
             >
               {t.key}
             </button>
@@ -182,7 +181,7 @@ export default function AdminPage() {
                             ))}
                           <td className="px-4 py-3">
                             <div className="flex gap-2">
-                              <button onClick={() => {}} className="text-xs text-blue-600 hover:underline">Edit</button>
+                              <button onClick={() => { }} className="text-xs text-blue-600 hover:underline">Edit</button>
                               <button onClick={() => handleDelete(activeTable!, row.id as number)} className="text-xs text-red-600 hover:underline">Delete</button>
                             </div>
                           </td>

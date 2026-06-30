@@ -1,35 +1,36 @@
 "use client";
 
-import { usePathname, Link } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useAppDispatch } from "@/store/hooks";
 import { logout } from "@/store/authSlice";
 import { Button } from "@/shared/components/ui/Button";
+import Link from "next/link";
 
 const MENU_ITEMS = [
-  { 
-    label: "Dashboard", 
-    href: "/admin", 
-    icon: "📊" 
+  {
+    label: "Dashboard",
+    href: "/admin",
+    icon: "📊"
   },
-  { 
-    label: "Ambulances", 
-    href: "/admin/ambulances", 
-    icon: "🚑" 
+  {
+    label: "Ambulances",
+    href: "/admin/ambulances",
+    icon: "🚑"
   },
-  { 
-    label: "Doctors", 
-    href: "/admin/doctors", 
-    icon: "🩺" 
+  {
+    label: "Doctors",
+    href: "/admin/doctors",
+    icon: "🩺"
   },
-  { 
-    label: "Medicines", 
-    href: "/admin/medicines", 
-    icon: "💊" 
+  {
+    label: "Medicines",
+    href: "/admin/medicines",
+    icon: "💊"
   },
-  { 
-    label: "Support", 
-    href: "/admin/messages", 
-    icon: "✉️" 
+  {
+    label: "Support",
+    href: "/admin/messages",
+    icon: "✉️"
   },
 ];
 
@@ -54,11 +55,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${
-                  isActive 
-                    ? "bg-blue-50 text-blue-600" 
-                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                }`}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${isActive
+                  ? "bg-blue-50 text-blue-600"
+                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  }`}
               >
                 <span className="text-lg">{item.icon}</span>
                 {item.label}
@@ -68,8 +68,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </nav>
 
         <div className="p-4 border-t border-gray-200">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="w-full justify-start gap-3 text-red-600 hover:text-red-700 hover:bg-red-50"
             onClick={() => dispatch(logout())}
           >
