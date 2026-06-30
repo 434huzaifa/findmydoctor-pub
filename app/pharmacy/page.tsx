@@ -41,6 +41,8 @@ export default function PharmacyPage() {
   const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [otpStep, setOtpStep] = useState<"info" | "otp">("info");
+  const [otpValue, setOtpValue] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
   const [createOrder] = useCreateMedicineOrderMutation();
@@ -83,6 +85,16 @@ export default function PharmacyPage() {
       return;
     }
 
+    if (otpStep === "info") {
+      setOtpStep("otp");
+      return;
+    }
+
+    if (otpValue !== "1234") {
+      toast.error("Invalid OTP. Please enter the correct dummy OTP (1234).");
+      return;
+    }
+
     setIsProcessing(true);
 
     try {
@@ -109,6 +121,8 @@ export default function PharmacyPage() {
       setGuestName("");
       setGuestPhone("");
       setAddress("");
+      setOtpStep("info");
+      setOtpValue("");
       router.push("/success");
     } catch (error: unknown) {
       toast.error((error as { data?: { message?: string } })?.data?.message ?? "Order failed");
@@ -231,13 +245,13 @@ export default function PharmacyPage() {
       </section>
 
       {/* Cart Modal */}
-      <AppModal isOpen={showCart} onClose={() => setShowCart(false)} title={`🛒 Cart (${cartCount} items)`} size="lg"
+      <AppModal isOpen={showCart} onClose={() => { setShowCart(false); setOtpStep("info"); setOtpValue(""); }} title={otpStep === "info" ? `🛒 Cart (${cartCount} items)` : "OTP Verification"} size="lg"
         footer={
           <>
             <button onClick={() => setShowCart(false)} className="rounded-lg border px-4 py-2 text-sm">Continue Shopping</button>
             <button type="submit" form="checkout-form" disabled={isProcessing || cartItems.length === 0}
               className="rounded-lg bg-green-600 px-6 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50">
-              {isProcessing ? "Processing..." : `💳 Pay ৳${cartTotal.toFixed(2)}`}
+              {isProcessing ? "Processing..." : otpStep === "info" ? `💳 Pay ৳${cartTotal.toFixed(2)}` : "Verify & Confirm"}
             </button>
           </>
         }>
@@ -277,23 +291,42 @@ export default function PharmacyPage() {
 
             <hr />
 
-            {/* Customer Info */}
-            <div>
-              <label className="block text-sm font-medium mb-1">Your Name</label>
-              <input type="text" value={guestName} onChange={(e) => setGuestName(e.target.value)}
-                className="w-full rounded-lg border px-3 py-2 text-sm" placeholder="Optional" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Phone Number *</label>
-              <input type="tel" inputMode="numeric" maxLength={11} required value={guestPhone} onChange={(e) => setGuestPhone(normalizePhoneInput(e.target.value))}
-                className="w-full rounded-lg border px-3 py-2 text-sm" placeholder="+880 1XXX-XXXXXX" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Delivery Address *</label>
-              <textarea required value={address} onChange={(e) => setAddress(e.target.value)} rows={2}
-                className="w-full rounded-lg border px-3 py-2 text-sm resize-none" placeholder="Full address" />
-            </div>
-
+            {otpStep === "info" ? (
+              <>
+                {/* Customer Info */}
+                <div>
+                  <label className="block text-sm font-medium mb-1">Your Name</label>
+                  <input type="text" value={guestName} onChange={(e) => setGuestName(e.target.value)}
+                    className="w-full rounded-lg border px-3 py-2 text-sm" placeholder="Optional" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Phone Number *</label>
+                  <input type="tel" inputMode="numeric" maxLength={11} required value={guestPhone} onChange={(e) => setGuestPhone(normalizePhoneInput(e.target.value))}
+                    className="w-full rounded-lg border px-3 py-2 text-sm" placeholder="+880 1XXX-XXXXXX" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Delivery Address *</label>
+                  <textarea required value={address} onChange={(e) => setAddress(e.target.value)} rows={2}
+                    className="w-full rounded-lg border px-3 py-2 text-sm resize-none" placeholder="Full address" />
+                </div>
+              </>
+            ) : (
+              <div>
+                <p className="text-sm text-gray-600 mb-4">Please enter the 4-digit OTP sent to your phone to confirm your cart order.</p>
+                <label className="block text-sm font-medium mb-1">OTP Code *</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={4}
+                  required
+                  value={otpValue}
+                  onChange={(e) => setOtpValue(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  className="w-full rounded-lg border px-3 py-2 text-sm"
+                  placeholder="Enter OTP"
+                />
+                <p className="mt-3 text-xs text-gray-500">(Dummy OTP is 1234)</p>
+              </div>
+            )}
 
           </form>
         )}

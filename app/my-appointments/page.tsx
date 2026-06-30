@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { usePhoneLookupQuery } from "@/store/fmdApi";
 import { isValidPhone, normalizePhoneInput } from "@/shared/lib/utils";
+import { toast } from "sonner";
 
 type TabType = "appointments" | "orders" | "ambulance" | "homevisit";
 
@@ -16,6 +17,8 @@ const TABS: { key: TabType; label: string; icon: string }[] = [
 export default function MyCornerPage() {
   const [phone, setPhone] = useState("");
   const [submitted, setSubmitted] = useState("");
+  const [otpStep, setOtpStep] = useState<"info" | "otp">("info");
+  const [otpValue, setOtpValue] = useState("");
   const [activeTab, setActiveTab] = useState<TabType>("appointments");
   const [pages, setPages] = useState<Record<TabType, number>>({ appointments: 1, orders: 1, ambulance: 1, homevisit: 1 });
 
@@ -24,10 +27,24 @@ export default function MyCornerPage() {
     { skip: !submitted }
   );
 
-  function handleSearch(e: React.FormEvent) {
+  function handleSearch(e: FormEvent) {
     e.preventDefault();
     if (!phone.trim()) return;
-    if (!isValidPhone(phone)) return;
+    if (!isValidPhone(phone)) {
+      toast.error("Phone number must be exactly 11 digits.");
+      return;
+    }
+
+    if (otpStep === "info") {
+      setOtpStep("otp");
+      return;
+    }
+
+    if (otpValue !== "1234") {
+      toast.error("Invalid OTP. Please enter the correct dummy OTP (1234).");
+      return;
+    }
+
     setSubmitted(phone.trim());
     setPages({ appointments: 1, orders: 1, ambulance: 1, homevisit: 1 });
   }
@@ -49,11 +66,21 @@ export default function MyCornerPage() {
             💡 Dummy OTP for verification: <span className="font-bold">1234</span>
           </div>
 
-          <form onSubmit={handleSearch} className="mt-6 flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-            <input type="tel" inputMode="numeric" maxLength={11} placeholder="Enter your phone number..." value={phone} onChange={(e) => setPhone(normalizePhoneInput(e.target.value))} required
-              className="flex-1 rounded-xl border-0 bg-white/95 px-4 py-3 text-sm shadow-lg outline-none" />
-            <button type="submit" className="rounded-xl bg-white px-6 py-3 text-sm font-semibold text-indigo-700 shadow-lg hover:bg-indigo-50">
-              🔍 Search
+          <form onSubmit={handleSearch} className="mt-6 max-w-md mx-auto space-y-3">
+            {otpStep === "info" ? (
+              <input type="tel" inputMode="numeric" maxLength={11} placeholder="Enter your phone number..." value={phone} onChange={(e) => setPhone(normalizePhoneInput(e.target.value))} required
+                className="w-full rounded-xl border-0 bg-white/95 px-4 py-3 text-sm shadow-lg outline-none" />
+            ) : (
+              <>
+                <input type="tel" inputMode="numeric" maxLength={11} value={phone} readOnly
+                  className="w-full rounded-xl border-0 bg-white/80 px-4 py-3 text-sm shadow-lg outline-none" />
+                <input type="text" inputMode="numeric" maxLength={4} placeholder="Enter 4-digit OTP" value={otpValue}
+                  onChange={(e) => setOtpValue(e.target.value.replace(/\D/g, "").slice(0, 4))} required
+                  className="w-full rounded-xl border-0 bg-white/95 px-4 py-3 text-sm shadow-lg outline-none" />
+              </>
+            )}
+            <button type="submit" className="w-full rounded-xl bg-white px-6 py-3 text-sm font-semibold text-indigo-700 shadow-lg hover:bg-indigo-50">
+              {otpStep === "info" ? "🔍 Search" : "Verify & Confirm"}
             </button>
           </form>
         </div>
