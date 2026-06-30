@@ -108,6 +108,7 @@ export const fmdApi = createApi({
     "Ambulances",
     "HomeVisits",
     "Consultations",
+    "Messages",
   ],
   endpoints: (build) => ({
     // Auth
@@ -521,6 +522,26 @@ export const fmdApi = createApi({
       query: (id) => ({ url: `/admin/ambulances/${id}`, method: "DELETE" }),
       invalidatesTags: ["Ambulances", "AdminDashboard"],
     }),
+
+    // Admin — Messages
+    getAdminMessages: build.query<
+      { items: any[]; total: number; page: number; limit: number; totalPages: number },
+      { page: number; limit: number }
+    >({
+      query: ({ page, limit }) => `/admin/messages?page=${page}&limit=${limit}`,
+      providesTags: ["Messages"],
+    }),
+    updateMessageStatus: build.mutation<
+      any,
+      { id: number; status: string }
+    >({
+      query: ({ id, status }) => ({
+        url: `/admin/messages/${id}`,
+        method: "PATCH",
+        body: { status },
+      }),
+      invalidatesTags: ["Messages"],
+    }),
   }),
 });
 
@@ -576,4 +597,7 @@ export const {
   useCreateAdminAmbulanceMutation,
   useUpdateAdminAmbulanceMutation,
   useDeleteAdminAmbulanceMutation,
+  // Admin — Messages
+  useGetAdminMessagesQuery,
+  useUpdateMessageStatusMutation,
 } = fmdApi;
