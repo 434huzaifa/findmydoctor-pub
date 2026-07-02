@@ -6,6 +6,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Providers } from "./providers";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { BackToTop } from "@/components/common/BackToTop";
+import { ClarityAnalytics } from "@/components/common/ClarityAnalytics";
 import "./globals.css";
 
 const inter = Inter({
@@ -34,12 +35,13 @@ export default function RootLayout({
       <body className="font-sans min-h-screen flex flex-col">
         <Providers>
           <ErrorBoundary>
-          <NavBar />
-          <main className="flex-1">{children}</main>
-          <Footer />
-          <BackToTop />
-          <Toaster richColors position="top-right" />
-                  </ErrorBoundary>
+            <NavBar />
+            <main className="flex-1">{children}</main>
+            <Footer />
+            <BackToTop />
+            <Toaster richColors position="top-right" />
+            <ClarityAnalytics />
+          </ErrorBoundary>
         </Providers>
       </body>
     </html>
