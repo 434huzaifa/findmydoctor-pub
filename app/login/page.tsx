@@ -21,7 +21,7 @@ export default function LoginPage() {
     try {
       const result = await login(form).unwrap();
       dispatch(
-        setCredentials({ user: result.user, token: result.accessToken }),
+        setCredentials({ user: result.user, token: result.accessToken, refreshToken: result.refreshToken }),
       );
       router.push(
         result.user.role === "admin" ? "/admin" : "/doctor-dashboard",

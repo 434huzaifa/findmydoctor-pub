@@ -43,7 +43,9 @@ export function useDoctors() {
     if (filters.city) params.city = filters.city;
     if (filters.availability) params.availability = filters.availability;
     if (filters.sortBy) {
-      params.sortBy = `${filters.sortBy}_${filters.sortOrder}` as DoctorSort;
+      // Rating should always be High → Low (desc)
+      const order = filters.sortBy === "rating" ? "desc" : filters.sortOrder;
+      params.sortBy = `${filters.sortBy}_${order}` as DoctorSort;
     }
 
     return params;

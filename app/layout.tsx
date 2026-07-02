@@ -4,6 +4,8 @@ import { Toaster } from "sonner";
 import { NavBar } from "@/components/layout/NavBar";
 import { Footer } from "@/components/layout/Footer";
 import { Providers } from "./providers";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
+import { BackToTop } from "@/components/common/BackToTop";
 import "./globals.css";
 
 const inter = Inter({
@@ -31,10 +33,13 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
       <body className="font-sans min-h-screen flex flex-col">
         <Providers>
+          <ErrorBoundary>
           <NavBar />
           <main className="flex-1">{children}</main>
           <Footer />
+          <BackToTop />
           <Toaster richColors position="top-right" />
+                  </ErrorBoundary>
         </Providers>
       </body>
     </html>

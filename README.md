@@ -209,3 +209,37 @@ Only `doctor` and `admin` roles can sign in through the UI. Patients do not need
 **Doctor**
 - email: `doctor1@fmd.local`
 - password: `admin1234`
+
+---
+
+## Deployment (Vercel)
+
+This project is ready for deployment on **Vercel**.
+
+### Required Environment Variables
+
+Add these in your Vercel project settings:
+
+| Variable                  | Required | Description                              |
+|---------------------------|----------|------------------------------------------|
+| `PG_URL`                  | Yes      | PostgreSQL connection string             |
+| `JWT_ACCESS_SECRET`       | Yes      | Secret for access tokens                 |
+| `JWT_REFRESH_SECRET`      | Yes      | Secret for refresh tokens                |
+| `NEXT_PUBLIC_BASE_URL`    | No       | Production URL (auto-set by Vercel)      |
+
+### Steps to Deploy
+
+1. Push your code to GitHub
+2. Import the repository on [Vercel](https://vercel.com)
+3. Add the required environment variables
+4. Click **Deploy**
+
+After deployment, make sure your database is accessible from Vercel's network.
+
+---
+
+## Project Status
+
+**Current Phase:** Phase 5 — Deployment & Maintenance  
+**Last Updated:** July 2026
+
