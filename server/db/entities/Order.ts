@@ -4,13 +4,12 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  ManyToOne,
-  JoinColumn,
+  OneToMany,
 } from "typeorm";
 import type { Relation } from "typeorm";
-import type { Medicine } from "./Medicine";
+import type { OrderItem } from "./OrderItem";
 
-export enum MedicineOrderStatus {
+export enum OrderStatus {
   PENDING = "pending",
   CONFIRMED = "confirmed",
   PROCESSING = "processing",
@@ -18,16 +17,10 @@ export enum MedicineOrderStatus {
   CANCELLED = "cancelled",
 }
 
-@Entity("medicine_order")
-export class MedicineOrder {
+@Entity("order")
+export class Order {
   @PrimaryGeneratedColumn()
   id!: number;
-
-  @Column({ type: "int", nullable: false })
-  medicineId!: number;
-
-  @Column({ type: "int", default: 1, nullable: false })
-  quantity!: number;
 
   @Column({ type: "varchar", length: 255, nullable: true })
   guestName!: string | null;
@@ -40,18 +33,17 @@ export class MedicineOrder {
 
   @Column({
     type: "enum",
-    enum: MedicineOrderStatus,
-    default: MedicineOrderStatus.PENDING,
+    enum: OrderStatus,
+    default: OrderStatus.PENDING,
     nullable: false,
   })
-  status!: MedicineOrderStatus;
+  status!: OrderStatus;
 
-  @ManyToOne("Medicine", "orders", {
-    onDelete: "RESTRICT",
-    onUpdate: "CASCADE",
-  })
-  @JoinColumn({ name: "medicineId" })
-  medicine!: Relation<Medicine>;
+  @Column({ type: "decimal", precision: 10, scale: 2, default: 0 })
+  total!: number;
+
+  @OneToMany("OrderItem", "order")
+  items!: Relation<OrderItem>[];
 
   @CreateDateColumn({ type: "timestamptz" })
   createdAt!: Date;

@@ -1,8 +1,9 @@
 import { NextRequest } from "next/server";
+import { In } from "typeorm";
 import {
   getDataSource,
   Appointment,
-  MedicineOrder,
+  Order,
   AmbulanceDispatch,
   HomeVisitRequest,
 } from "@/server/db/data-source";
@@ -48,16 +49,25 @@ export async function GET(req: NextRequest) {
     }
 
     if (type === "orders") {
-      const repo = ds.getRepository(MedicineOrder);
-      const query = repo
+      const repo = ds.getRepository(Order);
+
+      const [ids, total] = await repo
         .createQueryBuilder("o")
-        .leftJoinAndSelect("o.medicine", "m")
+        .select("o.id")
         .where("o.guestPhone = :phone", { phone })
         .orderBy("o.createdAt", "DESC")
         .skip(skip)
-        .take(limit);
+        .take(limit)
+        .getManyAndCount();
 
-      const [items, total] = await query.getManyAndCount();
+      const items = ids.length
+        ? await repo.find({
+            where: { id: In(ids.map((o) => o.id)) },
+            relations: { items: { medicine: true } },
+            order: { createdAt: "DESC" },
+          })
+        : [];
+
       return ok({ items, total, page, limit, totalPages: Math.ceil(total / limit) });
     }
 

@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import {
-  useDeleteTableRowMutation,
+  useDeleteAdminMedicineOrderMutation,
   useGetAdminMedicineOrdersQuery,
   useUpdateAdminMedicineOrderStatusMutation,
 } from "@/store/fmdApi";
 import { EditRowModal } from "@/components/admin/EditRowModal";
-import type { MedicineOrderStatus } from "@/types/domain";
+import type { OrderStatus } from "@/types/domain";
 
-const STATUS_OPTIONS: { value: MedicineOrderStatus; label: string }[] = [
+const STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
   { value: "pending", label: "Pending" },
   { value: "confirmed", label: "Confirmed" },
   { value: "processing", label: "In Progress" },
@@ -38,13 +38,13 @@ function getStatusClasses(status: string) {
 export default function AdminOrdersPage() {
   const [editRow, setEditRow] = useState<Record<string, unknown> | null>(null);
   const { data, isLoading, refetch } = useGetAdminMedicineOrdersQuery();
-  const [deleteRow] = useDeleteTableRowMutation();
+  const [deleteOrder] = useDeleteAdminMedicineOrderMutation();
   const [updateStatus, { isLoading: isUpdatingStatus }] = useUpdateAdminMedicineOrderStatusMutation();
 
   async function handleDelete(id: number) {
-    if (!confirm("Are you sure you want to delete this order?")) return;
+    if (!confirm("Are you sure you want to delete this order? Stock will be restored.")) return;
     try {
-      await deleteRow({ table: "medicine_order", id }).unwrap();
+      await deleteOrder(id).unwrap();
       toast.success("Order deleted");
       refetch();
     } catch {
@@ -52,7 +52,7 @@ export default function AdminOrdersPage() {
     }
   }
 
-  async function handleStatusChange(id: number, status: MedicineOrderStatus) {
+  async function handleStatusChange(id: number, status: OrderStatus) {
     try {
       await updateStatus({ id, status }).unwrap();
       toast.success(`Order status updated to ${status}`);
@@ -67,12 +67,8 @@ export default function AdminOrdersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Manage Orders</h1>
-          <p className="text-sm text-gray-500">Track and update medicine order statuses by section</p>
+          <p className="text-sm text-gray-500">Track and update order statuses by section</p>
         </div>
-        {/* <div className="rounded-2xl bg-gradient-to-r from-indigo-600 to-blue-600 px-5 py-4 text-white shadow-lg">
-          <p className="text-xs uppercase tracking-[0.2em] text-white/70">Total Orders</p>
-          <p className="mt-1 text-3xl font-black">{data?.total ?? 0}</p>
-        </div> */}
       </div>
 
       {isLoading ? (
@@ -105,9 +101,9 @@ export default function AdminOrdersPage() {
                     <thead className="bg-white border-b border-gray-100">
                       <tr>
                         <th className="px-6 py-4 font-semibold text-gray-600">Order ID</th>
-                        <th className="px-6 py-4 font-semibold text-gray-600">Medicine</th>
+                        <th className="px-6 py-4 font-semibold text-gray-600">Items</th>
                         <th className="px-6 py-4 font-semibold text-gray-600">Customer</th>
-                        <th className="px-6 py-4 font-semibold text-gray-600">Qty</th>
+                        <th className="px-6 py-4 font-semibold text-gray-600">Total</th>
                         <th className="px-6 py-4 font-semibold text-gray-600">Date</th>
                         <th className="px-6 py-4 font-semibold text-gray-600">Status</th>
                         <th className="px-6 py-4 font-semibold text-gray-600">Actions</th>
@@ -116,13 +112,18 @@ export default function AdminOrdersPage() {
                     <tbody className="divide-y divide-gray-100">
                       {group.rows.map((row, index) => {
                         const order = row as Record<string, any>;
+                        const items = (order.items ?? []) as Record<string, any>[];
+                        const total = typeof order.total === "string" ? parseFloat(order.total) : order.total;
                         return (
                           <tr key={order.id ?? index} className="hover:bg-gray-50/80 transition">
                             <td className="px-6 py-4 font-semibold text-gray-900">#{order.id}</td>
                             <td className="px-6 py-4">
-                              <div>
-                                <p className="font-medium text-gray-900">{order.medicine?.name ?? `Medicine #${order.medicineId}`}</p>
-                                <p className="text-xs text-gray-500">{order.medicine?.company ?? "—"}</p>
+                              <div className="space-y-1">
+                                {items.map((item) => (
+                                  <p key={item.id} className="text-gray-800">
+                                    {item.medicine?.name ?? `Medicine #${item.medicineId}`} × {item.quantity}
+                                  </p>
+                                ))}
                               </div>
                             </td>
                             <td className="px-6 py-4">
@@ -132,7 +133,7 @@ export default function AdminOrdersPage() {
                                 <p className="text-xs text-gray-400 line-clamp-1">{order.address}</p>
                               </div>
                             </td>
-                            <td className="px-6 py-4 text-gray-700">{order.quantity}</td>
+                            <td className="px-6 py-4 font-semibold text-gray-800">৳{total.toFixed(2)}</td>
                             <td className="px-6 py-4 text-xs text-gray-500">{new Date(String(order.createdAt)).toLocaleString()}</td>
                             <td className="px-6 py-4">
                               <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold uppercase ${getStatusClasses(String(order.status))}`}>
@@ -143,7 +144,7 @@ export default function AdminOrdersPage() {
                               <div className="flex flex-wrap items-center gap-3">
                                 <select
                                   value={String(order.status)}
-                                  onChange={(e) => handleStatusChange(Number(order.id), e.target.value as MedicineOrderStatus)}
+                                  onChange={(e) => handleStatusChange(Number(order.id), e.target.value as OrderStatus)}
                                   disabled={isUpdatingStatus}
                                   className="min-w-[150px] rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                                 >
@@ -173,12 +174,12 @@ export default function AdminOrdersPage() {
         <EditRowModal
           isOpen
           onClose={() => setEditRow(null)}
-          table="medicine_order"
+          table="order"
           row={editRow}
           columns={[
+            { name: "guestName", label: "Guest Name", nullable: true },
             { name: "guestPhone", label: "Phone" },
             { name: "address", label: "Address" },
-            { name: "quantity", label: "Quantity" },
             { name: "status", label: "Status" },
           ]}
           onSaved={() => {

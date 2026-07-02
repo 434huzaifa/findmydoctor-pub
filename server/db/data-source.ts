@@ -7,7 +7,8 @@ import { Doctor } from "./entities/Doctor";
 import { Specialty } from "./entities/Specialty";
 import { Appointment } from "./entities/Appointment";
 import { Medicine } from "./entities/Medicine";
-import { MedicineOrder } from "./entities/MedicineOrder";
+import { Order } from "./entities/Order";
+import { OrderItem } from "./entities/OrderItem";
 import { Ambulance } from "./entities/Ambulance";
 import { AmbulanceDispatch } from "./entities/AmbulanceDispatch";
 import { HomeVisitRequest } from "./entities/HomeVisitRequest";
@@ -38,7 +39,8 @@ const allEntities = [
   Doctor,
   Appointment,
   Medicine,
-  MedicineOrder,
+  Order,
+  OrderItem,
   Ambulance,
   AmbulanceDispatch,
   HomeVisitRequest,
@@ -139,7 +141,8 @@ export {
   Specialty,
   Appointment,
   Medicine,
-  MedicineOrder,
+  Order,
+  OrderItem,
   Ambulance,
   AmbulanceDispatch,
   HomeVisitRequest,

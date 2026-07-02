@@ -73,17 +73,19 @@ export default function SuccessPage() {
                     </span>
                     #{medicineOrder.id}
                   </p>
+                  {medicineOrder.items.map((item) => (
+                    <p key={item.id}>
+                      <span className="text-[color:var(--text-muted)]">
+                        {item.medicine.name}:{" "}
+                      </span>
+                      Qty {item.quantity}
+                    </p>
+                  ))}
                   <p>
                     <span className="text-[color:var(--text-muted)]">
-                      Medicine:{" "}
+                      Total:{" "}
                     </span>
-                    {medicineOrder.medicine.name}
-                  </p>
-                  <p>
-                    <span className="text-[color:var(--text-muted)]">
-                      Quantity:{" "}
-                    </span>
-                    {medicineOrder.quantity}
+                    ৳{Number(medicineOrder.total).toFixed(2)}
                   </p>
                 </div>
               </div>

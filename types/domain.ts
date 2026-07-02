@@ -82,22 +82,32 @@ export type MedicineListParams = {
   sort?: "asc" | "desc";
 };
 
-export type MedicineOrderStatus =
+export type OrderStatus =
   | "pending"
   | "confirmed"
   | "processing"
   | "delivered"
   | "cancelled";
 
-export type MedicineOrder = {
+export type OrderItem = {
   id: number;
+  orderId: number;
   medicineId: number;
   quantity: number;
+  unitPrice: number;
+  medicine: Medicine;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Order = {
+  id: number;
   guestName: string | null;
   guestPhone: string;
   address: string;
-  status: MedicineOrderStatus;
-  medicine: Medicine;
+  status: OrderStatus;
+  total: number;
+  items: OrderItem[];
   createdAt: string;
   updatedAt: string;
 };

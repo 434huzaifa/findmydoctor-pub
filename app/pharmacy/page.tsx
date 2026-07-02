@@ -17,6 +17,7 @@ import {
   selectCartCount,
   selectCartTotal,
 } from "@/store/cartSlice";
+import { setMedicineOrderInfo } from "@/store/bookingSlice";
 import { AppModal } from "@/components/common/AppModal";
 import type { Medicine, MedicineListParams } from "@/types/domain";
 import { isValidPhone, normalizePhoneInput } from "@/shared/lib/utils";
@@ -104,18 +105,18 @@ export default function PharmacyPage() {
       toast.dismiss();
       toast.success("💳 Payment successful!");
 
-      // Create orders for each cart item
-      for (const item of cartItems) {
-        await createOrder({
+      const order = await createOrder({
+        guestName: guestName.trim() || undefined,
+        guestPhone: guestPhone.trim(),
+        address: address.trim(),
+        items: cartItems.map((item) => ({
           medicineId: item.medicineId,
           quantity: item.quantity,
-          guestName: guestName.trim() || undefined,
-          guestPhone: guestPhone.trim(),
-          address: address.trim(),
-        }).unwrap();
-      }
+        })),
+      }).unwrap();
 
-      toast.success(`✅ ${cartItems.length} order(s) placed! We will call ${guestPhone}`);
+      dispatch(setMedicineOrderInfo(order));
+      toast.success(`✅ Order placed! We will call ${guestPhone}`);
       dispatch(clearCart());
       setShowCart(false);
       setGuestName("");
@@ -324,7 +325,7 @@ export default function PharmacyPage() {
                   className="w-full rounded-lg border px-3 py-2 text-sm"
                   placeholder="Enter OTP"
                 />
-                <p className="mt-3 text-xs text-gray-500">(Dummy OTP is 1234)</p>
+
               </div>
             )}
 

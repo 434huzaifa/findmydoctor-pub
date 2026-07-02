@@ -22,25 +22,6 @@ export function getStockStatus(medicine: Medicine): "in-stock" | "low-stock" | "
   return "in-stock";
 }
 
-// ─── Medicine Order ─────────────────────────────────────────────────────────
-
-export type MedicineOrderStatus =
-  | "pending"
-  | "confirmed"
-  | "processing"
-  | "delivered"
-  | "cancelled";
-
-export interface MedicineOrder extends BaseEntity {
-  medicineId: number;
-  quantity: number;
-  guestName: string | null;
-  guestPhone: string;
-  address: string;
-  status: MedicineOrderStatus;
-  medicine: Medicine;
-}
-
 // ─── Medicine Filters ───────────────────────────────────────────────────────
 
 export interface MedicineFilters {
@@ -70,13 +51,3 @@ export interface MedicineListParams {
 
 export type PaginatedMedicines = PaginatedResponse<Medicine>;
 
-// ─── Order Form ─────────────────────────────────────────────────────────────
-
-export interface MedicineOrderForm {
-  medicineId: number;
-  quantity: number;
-  guestName: string;
-  guestPhone: string;
-  address: string;
-  paymentMethod: "online" | "cash";
-}

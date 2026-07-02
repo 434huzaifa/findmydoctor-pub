@@ -6,31 +6,22 @@ import {
   useGetAdminDoctorsQuery,
   useDeleteAdminDoctorMutation,
   useUpdateAdminDoctorMutation
-import {
-    useGetAdminDoctorsQuery,
-    useDeleteAdminDoctorMutation,
-    useUpdateAdminDoctorMutation
-  } from "@/store/fmdApi";
+} from "@/store/fmdApi";
 import { AddDoctorForm } from "@/components/admin/AddDoctorForm";
 import { EditRowModal } from "@/components/admin/EditRowModal";
 
 export default function AdminDoctorsPage() {
   console.log("AdminDoctorsPage rendered");
   const [editDoctor, setEditDoctor] = useState<Record<string, unknown> | null>(null);
-  const [editDoctor, setEditDoctor] = useState<Record<string, unknown> | null>(null);
+
 
   const {
     data: doctors,
     isLoading,
     refetch
-  const {
-      data: doctors,
-      isLoading,
-      refetch
-    } = useGetAdminDoctorsQuery();
+  } = useGetAdminDoctorsQuery();
 
   const [deleteDoctor] = useDeleteAdminDoctorMutation();
-  const [updateDoctor] = useUpdateAdminDoctorMutation();
 
   async function handleDelete(id: number | undefined | null) {
     if (!confirm("Are you sure you want to delete this doctor?")) return;

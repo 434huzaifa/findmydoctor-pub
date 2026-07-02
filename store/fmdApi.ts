@@ -4,8 +4,8 @@ import type {
   Doctor,
   Specialty,
   Medicine,
-  MedicineOrder,
-  MedicineOrderStatus,
+  Order,
+  OrderStatus,
   Ambulance,
   AmbulanceDispatch,
   HomeVisitRequest,
@@ -168,13 +168,12 @@ export const fmdApi = createApi({
       providesTags: ["Medicines"],
     }),
     createMedicineOrder: build.mutation<
-      MedicineOrder,
+      Order,
       {
-        medicineId: number;
-        quantity: number;
         guestName?: string;
         guestPhone: string;
         address: string;
+        items: { medicineId: number; quantity: number }[];
       }
     >({
       query: (body) => ({ url: "/medicine/orders", method: "POST", body }),
@@ -394,13 +393,20 @@ export const fmdApi = createApi({
       providesTags: ["Medicines"],
     }),
     updateAdminMedicineOrderStatus: build.mutation<
-      MedicineOrder,
-      { id: number; status: MedicineOrderStatus }
+      Order,
+      { id: number; status: OrderStatus }
     >({
       query: ({ id, status }) => ({
         url: `/admin/medicine/orders/${id}`,
         method: "PATCH",
         body: { status },
+      }),
+      invalidatesTags: ["Medicines"],
+    }),
+    deleteAdminMedicineOrder: build.mutation<{ success: boolean }, number>({
+      query: (id) => ({
+        url: `/admin/medicine/orders/${id}`,
+        method: "DELETE",
       }),
       invalidatesTags: ["Medicines"],
     }),
@@ -597,6 +603,7 @@ export const {
   useGetDoctorDashboardQuery,
   useGetAdminMedicineOrdersQuery,
   useUpdateAdminMedicineOrderStatusMutation,
+  useDeleteAdminMedicineOrderMutation,
   useLazyGetDoctorDashboardQuery,
   useMarkAppointmentPaidMutation,
   useGetAdminDashboardQuery,

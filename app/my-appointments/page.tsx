@@ -184,53 +184,41 @@ function AppointmentCards({ items }: { items: any[] }) {
 }
 
 function OrderCards({ items }: { items: any[] }) {
-  // Group by createdAt (same minute = same order batch)
-  const grouped = new Map<string, any[]>();
-  for (const o of items) {
-    const key = o.guestPhone + "_" + new Date(o.createdAt).toISOString().slice(0, 16);
-    if (!grouped.has(key)) grouped.set(key, []);
-    grouped.get(key)!.push(o);
-  }
-
   return (
     <div className="space-y-4">
-      {Array.from(grouped.entries()).map(([key, orders]) => {
-        const first = orders[0];
-        const batchTotal = orders.reduce((sum: number, o: any) => {
-          const price = typeof o.medicine?.price === "string" ? parseFloat(o.medicine.price) : (o.medicine?.price ?? 0);
-          return sum + price * o.quantity;
-        }, 0);
+      {items.map((order) => {
+        const total = typeof order.total === "string" ? parseFloat(order.total) : order.total;
 
         return (
-          <div key={key} className="rounded-2xl border bg-white overflow-hidden">
+          <div key={order.id} className="rounded-2xl border bg-white overflow-hidden">
             <div className="h-1 bg-gradient-to-r from-green-400 to-emerald-500" />
             <div className="p-5">
               {/* Order header */}
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <p className="text-xs text-gray-400">{new Date(first.createdAt).toLocaleString()}</p>
-                  <p className="text-sm text-gray-500">📍 {first.address}</p>
+                  <p className="text-xs text-gray-400">Order #{order.id} · {new Date(order.createdAt).toLocaleString()}</p>
+                  <p className="text-sm text-gray-500">📍 {order.address}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-bold text-green-600">৳{batchTotal.toFixed(2)}</p>
-                  <StatusBadge status={first.status} />
+                  <p className="text-lg font-bold text-green-600">৳{total.toFixed(2)}</p>
+                  <StatusBadge status={order.status} />
                 </div>
               </div>
 
               {/* Items in this order */}
               <div className="space-y-2">
-                {orders.map((o: any) => {
-                  const price = typeof o.medicine?.price === "string" ? parseFloat(o.medicine.price) : (o.medicine?.price ?? 0);
+                {(order.items ?? []).map((item: any) => {
+                  const price = typeof item.unitPrice === "string" ? parseFloat(item.unitPrice) : item.unitPrice;
                   return (
-                    <div key={o.id} className="flex items-center justify-between rounded-lg bg-gray-50 p-3">
+                    <div key={item.id} className="flex items-center justify-between rounded-lg bg-gray-50 p-3">
                       <div className="flex items-center gap-3">
                         <span className="text-xl">💊</span>
                         <div>
-                          <p className="text-sm font-medium text-gray-900">{o.medicine?.name ?? `#${o.medicineId}`}</p>
-                          <p className="text-xs text-gray-500">{o.medicine?.company} · Qty: {o.quantity}</p>
+                          <p className="text-sm font-medium text-gray-900">{item.medicine?.name ?? `#${item.medicineId}`}</p>
+                          <p className="text-xs text-gray-500">{item.medicine?.company} · Qty: {item.quantity}</p>
                         </div>
                       </div>
-                      <p className="text-sm font-semibold text-gray-700">৳{(price * o.quantity).toFixed(2)}</p>
+                      <p className="text-sm font-semibold text-gray-700">৳{(price * item.quantity).toFixed(2)}</p>
                     </div>
                   );
                 })}
