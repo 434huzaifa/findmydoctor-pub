@@ -5,6 +5,7 @@ import type {
   Specialty,
   Medicine,
   MedicineOrder,
+  MedicineOrderStatus,
   Ambulance,
   AmbulanceDispatch,
   HomeVisitRequest,
