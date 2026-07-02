@@ -22,12 +22,10 @@ export default function AdminPage() {
 
   const {
     data: dashboard,
-    refetch: refetchDashboard,
   } = useGetAdminDashboardQuery(undefined, { skip: !isAuthorized });
 
   const {
     data: schema,
-    refetch: refetchSchema,
   } = useGetSchemaQuery(undefined, { skip: !isAuthorized });
 
   const [activeTable, setActiveTable] = useState<string | null>(null);
@@ -51,8 +49,7 @@ export default function AdminPage() {
 
   if (!isAuthorized) return null;
 
-  const activeColumns =
-    schema?.find((s) => s.key === activeTable)?.columns ?? [];
+
 
   async function handleDelete(table: string, id: number) {
     if (!confirm("Are you sure you want to delete this row?")) return;
@@ -69,7 +66,7 @@ export default function AdminPage() {
     <div className="p-8 max-w-7xl mx-auto">
       <header className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-        <p className="text-gray-500">Welcome back! Here is what's happening with your platform.</p>
+        <p className="text-gray-500">Welcome back! Here is what&apos;s happening with your platform.</p>
       </header>
 
       {/* Dashboard Stats */}

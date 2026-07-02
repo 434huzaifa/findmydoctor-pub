@@ -1,26 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
-import { 
-  useGetAdminMessagesQuery, 
-  useUpdateMessageStatusMutation 
+import {
+  useGetAdminMessagesQuery,
+  useUpdateMessageStatusMutation
 } from "@/store/fmdApi";
 import { Button } from "@/shared/components/ui/Button";
 import { AppModal } from "@/components/common/AppModal";
 
 export default function AdminMessagesPage() {
   const [page, setPage] = useState(1);
-  const [selectedMsg, setSelectedMsg] = useState<any>(null);
+  const [selectedMsg, setSelectedMsg] = useState<Record<string, unknown> | null>(null);
   const limit = 10;
 
-  const { 
-    data, 
-    isLoading, 
-    isFetching, 
-    refetch 
-  } = useGetAdminMessagesQuery({ page, limit }, { 
-    pollingInterval: 5000 
+  const {
+    data,
+    isLoading,
+    isFetching,
+    refetch
+  } = useGetAdminMessagesQuery({ page, limit }, {
+    pollingInterval: 5000
   });
 
   const [updateStatus] = useUpdateMessageStatusMutation();
@@ -28,8 +28,10 @@ export default function AdminMessagesPage() {
   const messages = data?.items ?? [];
   const totalPages = data?.totalPages ?? 1;
 
-  async function markAsRead(id: number) {
+  async function markAsRead(id: number | undefined | unknown) {
     try {
+      if (id === undefined) throw new Error("Message ID is undefined");
+      if (typeof id !== "number") throw new Error("Message ID must be a number");
       await updateStatus({ id, status: "read" }).unwrap();
       toast.success("Marked as read");
     } catch {
@@ -37,8 +39,10 @@ export default function AdminMessagesPage() {
     }
   }
 
-  async function markAsReplied(id: number) {
+  async function markAsReplied(id: number | undefined | unknown) {
     try {
+      if (id === undefined) throw new Error("Message ID is undefined");
+      if (typeof id !== "number") throw new Error("Message ID must be a number");
       await updateStatus({ id, status: "replied" }).unwrap();
       toast.success("Marked as replied");
     } catch {
@@ -91,17 +95,16 @@ export default function AdminMessagesPage() {
                   </td>
                 </tr>
               ) : (
-                messages.map((msg: any) => (
-                  <tr key={msg.id} className={`hover:bg-gray-50 transition ${msg.status === 'pending' ? 'bg-blue-50/30' : ''}`}>
-                    <td className="px-6 py-4 font-medium text-gray-900">{msg.senderName}</td>
-                    <td className="px-6 py-4 text-gray-600">{msg.senderPhone}</td>
-                    <td className="px-6 py-4 text-gray-600 truncate max-w-xs">{msg.message}</td>
+                messages.map((msg: Record<string, any>) => (
+                  <tr key={msg?.id || null} className={`hover:bg-gray-50 transition ${msg.status === 'pending' ? 'bg-blue-50/30' : ''}`}>
+                    <td className="px-6 py-4 font-medium text-gray-900">{msg?.senderName}</td>
+                    <td className="px-6 py-4 text-gray-600">{msg?.senderPhone}</td>
+                    <td className="px-6 py-4 text-gray-600 truncate max-w-xs">{msg?.message}</td>
                     <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        msg.status === 'pending' ? 'bg-blue-100 text-blue-700' : 
-                        msg.status === 'read' ? 'bg-gray-100 text-gray-700' : 'bg-green-100 text-green-700'
-                      }`}>
-                        {msg.status.charAt(0).toUpperCase() + msg.status.slice(1)}
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${msg?.status === 'pending' ? 'bg-blue-100 text-blue-700' :
+                        msg?.status === 'read' ? 'bg-gray-100 text-gray-700' : 'bg-green-100 text-green-700'
+                        }`}>
+                        {msg?.status?.charAt(0).toUpperCase() + msg?.status?.slice(1)}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-gray-500 text-xs">
@@ -141,18 +144,18 @@ export default function AdminMessagesPage() {
       </div>
 
       {selectedMsg && (
-        <AppModal 
-          isOpen={!!selectedMsg} 
-          onClose={() => setSelectedMsg(null)} 
+        <AppModal
+          isOpen={!!selectedMsg}
+          onClose={() => setSelectedMsg(null)}
           title={`Message from ${selectedMsg.senderName}`}
           footer={
             <>
               <Button variant="outline" onClick={() => setSelectedMsg(null)}>Close</Button>
               {selectedMsg.status === 'pending' && (
-                <Button onClick={() => { markAsRead(selectedMsg.id); setSelectedMsg(null); }}>Mark as Read</Button>
+                <Button onClick={() => { markAsRead(selectedMsg?.id); setSelectedMsg(null); }}>Mark as Read</Button>
               )}
               {selectedMsg.status === 'read' && (
-                <Button onClick={() => { markAsReplied(selectedMsg.id); setSelectedMsg(null); }}>Mark as Replied</Button>
+                <Button onClick={() => { markAsReplied(selectedMsg?.id); setSelectedMsg(null); }}>Mark as Replied</Button>
               )}
             </>
           }
@@ -161,24 +164,24 @@ export default function AdminMessagesPage() {
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-gray-500">Sender Name</p>
-                <p className="font-semibold">{selectedMsg.senderName}</p>
+                <p className="font-semibold">{selectedMsg?.senderName as string ?? "N/A"}</p>
               </div>
               <div>
                 <p className="text-gray-500">Phone Number</p>
-                <p className="font-semibold">{selectedMsg.senderPhone}</p>
+                <p className="font-semibold">{selectedMsg?.senderPhone as string ?? "N/A"}</p>
               </div>
               <div>
                 <p className="text-gray-500">Received At</p>
-                <p className="font-semibold">{new Date(selectedMsg.createdAt).toLocaleString()}</p>
+                <p className="font-semibold">{selectedMsg?.createdAt ? new Date(selectedMsg?.createdAt as string).toLocaleString() : "N/A"}</p>
               </div>
               <div>
                 <p className="text-gray-500">Status</p>
-                <p className="font-semibold uppercase">{selectedMsg.status}</p>
+                <p className="font-semibold uppercase">{selectedMsg?.status as string ?? "N/A"}</p>
               </div>
             </div>
             <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
               <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Message</p>
-              <p className="text-gray-800 whitespace-pre-wrap leading-relaxed">{selectedMsg.message}</p>
+              <p className="text-gray-800 whitespace-pre-wrap leading-relaxed">{selectedMsg?.message as string ?? "N/A"}</p>
             </div>
           </div>
         </AppModal>

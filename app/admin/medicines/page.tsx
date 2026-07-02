@@ -27,7 +27,7 @@ export default function AdminMedicinesPage() {
   );
 
   const [deleteRow] = useDeleteTableRowMutation();
-  const [updateRow] = useUpdateTableRowMutation();
+
 
   async function handleDelete(id: number) {
     if (!confirm("Are you sure you want to delete this medicine?")) return;

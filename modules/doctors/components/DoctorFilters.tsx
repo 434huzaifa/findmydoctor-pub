@@ -45,9 +45,9 @@ export function DoctorFiltersPanel({
 
   const sortOptions = [
     { value: "", label: "Sort by" },
-    { value: "fee", label: "Fee: Low → High" },
-    { value: "rating", label: "Rating: High → Low" },
-    { value: "exp", label: "Experience" },
+    { value: "fee_asc", label: "Fee: Low → High" },
+    { value: "rating_desc", label: "Rating: High → Low" },
+    { value: "exp_desc", label: "Most Experienced" },
   ];
 
   return (

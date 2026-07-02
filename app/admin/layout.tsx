@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useAppDispatch } from "@/store/hooks";
 import { logout } from "@/store/authSlice";
-import { Button } from "@/shared/components/ui/Button";
+
 import Link from "next/link";
 import { ProtectedRoute } from "@/components/common/ProtectedRoute";
 

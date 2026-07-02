@@ -52,7 +52,14 @@ export function getAvailableSlots(doctor: Doctor): number {
 
 // ─── Doctor Filters ─────────────────────────────────────────────────────────
 
-export type DoctorSortField = "fee" | "rating" | "exp";
+export type DoctorSortField = 
+  | "fee_asc" 
+  | "fee_desc" 
+  | "rating_desc" 
+  | "rating_asc" 
+  | "exp_desc" 
+  | "exp_asc" 
+  | "";
 
 export interface DoctorFilters {
   search: string;
@@ -60,7 +67,7 @@ export interface DoctorFilters {
   city: string;
   availability: DoctorAvailability | "";
   sortBy: DoctorSortField | "";
-  sortOrder: SortOrder;
+  sortOrder?: SortOrder;   // kept for compatibility but no longer used for sorting
 }
 
 export const DEFAULT_DOCTOR_FILTERS: DoctorFilters = {
@@ -69,7 +76,7 @@ export const DEFAULT_DOCTOR_FILTERS: DoctorFilters = {
   city: "",
   availability: "",
   sortBy: "",
-  sortOrder: "asc",
+  sortOrder: "desc",   // default to desc for rating-like sorting
 };
 
 // ─── API Types ──────────────────────────────────────────────────────────────

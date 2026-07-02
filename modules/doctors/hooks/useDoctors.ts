@@ -43,9 +43,8 @@ export function useDoctors() {
     if (filters.city) params.city = filters.city;
     if (filters.availability) params.availability = filters.availability;
     if (filters.sortBy) {
-      // Rating should always be High → Low (desc)
-      const order = filters.sortBy === "rating" ? "desc" : filters.sortOrder;
-      params.sortBy = `${filters.sortBy}_${order}` as DoctorSort;
+      // Send the full sort value directly to the API (e.g. "rating_desc", "fee_asc")
+      params.sortBy = filters.sortBy as DoctorSort;
     }
 
     return params;

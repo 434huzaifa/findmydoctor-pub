@@ -9,7 +9,6 @@ import {
   useMarkAppointmentPaidMutation,
   useGetDoctorQueueQuery,
   useAcceptPatientMutation,
-  useCompleteConsultationMutation,
   useSavePrescriptionMutation,
   useSaveAppointmentPrescriptionMutation,
   useToggleDoctorOnlineMutation,
@@ -23,7 +22,9 @@ type AppointmentStatus = "all" | "upcoming" | "completed" | "cancelled";
 export default function DoctorDashboardPage() {
   const router = useRouter();
   const user = useAppSelector((s) => s.auth.user);
-  const [dateRange, setDateRange] = useState({ from: "", to: "" });
+
+  // All hooks must be called unconditionally (before any early return)
+  const [dateRange] = useState({ from: "", to: "" });
   const [statusFilter, setStatusFilter] = useState<AppointmentStatus>("all");
   const [selectedAppointment, setSelectedAppointment] =
     useState<ApiAppointment | null>(null);
@@ -34,11 +35,6 @@ export default function DoctorDashboardPage() {
   const [prescriptionForAppointment, setPrescriptionForAppointment] =
     useState<ApiAppointment | null>(null);
   const [prescriptionText, setPrescriptionText] = useState("");
-
-  if (!user) {
-    router.push("/login");
-    return null;
-  }
 
   const doctorId = user?.doctorId || undefined;
 
@@ -65,8 +61,13 @@ export default function DoctorDashboardPage() {
   const [acceptPatient] = useAcceptPatientMutation();
   const [savePrescription] = useSavePrescriptionMutation();
   const [saveAppointmentPrescription] = useSaveAppointmentPrescriptionMutation();
-  const [completeConsultation] = useCompleteConsultationMutation();
   const [toggleOnline] = useToggleDoctorOnlineMutation();
+
+  // Early return AFTER all hooks
+  if (!user) {
+    router.push("/login");
+    return null;
+  }
 
   const isOnline = doctorDetails?.isOnlineForVideo ?? false;
   const summary = dashboard?.summary;
@@ -82,7 +83,6 @@ export default function DoctorDashboardPage() {
   });
 
   const waitingPatients = consultationQueue?.filter((c) => c.status === "waiting") || [];
-  const activeConsultation = consultationQueue?.find((c) => c.status === "active");
   const isPrescriptionModalOpen = !!selectedConsultation || !!prescriptionForAppointment;
 
   const handleMarkPaid = async () => {
@@ -127,14 +127,14 @@ export default function DoctorDashboardPage() {
     try {
       if (selectedConsultation) {
         await savePrescription({
-          consultationId: selectedConsultation.id,
-          prescription: prescriptionText,
+          id: selectedConsultation.id,
+          prescriptionText: prescriptionText,
         }).unwrap();
         toast.success("Prescription saved!");
       } else if (prescriptionForAppointment) {
         await saveAppointmentPrescription({
-          appointmentId: prescriptionForAppointment.id,
-          prescription: prescriptionText,
+          id: prescriptionForAppointment.id,
+          prescriptionText: prescriptionText,
         }).unwrap();
         toast.success("Prescription saved for appointment!");
       }
@@ -176,9 +176,9 @@ export default function DoctorDashboardPage() {
         {summary && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <SummaryCard label="Total Appointments" value={summary.totalAppointments} />
-            <SummaryCard label="Completed" value={summary.completed} color="green" />
-            <SummaryCard label="Upcoming" value={summary.upcoming} color="blue" />
-            <SummaryCard label="Total Revenue" value={`৳${summary.totalRevenue}`} color="teal" />
+            <SummaryCard label="Completed" value={summary.paidAppointments} color="green" />
+            <SummaryCard label="Upcoming" value={summary.unpaidAppointments + summary.partialAppointments} color="blue" />
+            <SummaryCard label="Total Revenue" value={`৳${summary.totalPaid}`} color="teal" />
           </div>
         )}
 
@@ -333,7 +333,7 @@ export default function DoctorDashboardPage() {
   );
 }
 
-function SummaryCard({ label, value, color = "gray" }: { label: string; value: any; color?: string }) {
+function SummaryCard({ label, value, color = "gray" }: { label: string; value: string | number; color?: string }) {
   const colors: Record<string, string> = {
     gray: "bg-white",
     green: "bg-green-50 text-green-700",

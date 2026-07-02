@@ -558,14 +558,14 @@ export const fmdApi = createApi({
 
     // Admin — Messages
     getAdminMessages: build.query<
-      { items: any[]; total: number; page: number; limit: number; totalPages: number },
+      { items: Record<string, unknown>[]; total: number; page: number; limit: number; totalPages: number },
       { page: number; limit: number }
     >({
       query: ({ page, limit }) => `/admin/messages?page=${page}&limit=${limit}`,
       providesTags: ["Messages"],
     }),
     updateMessageStatus: build.mutation<
-      any,
+      Record<string, unknown>,
       { id: number; status: string }
     >({
       query: ({ id, status }) => ({
