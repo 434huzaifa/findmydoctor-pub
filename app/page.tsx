@@ -1,5 +1,6 @@
 import Link from "next/link";
-
+import Clarity from '@microsoft/clarity';
+Clarity.init('xgcr4envu3');
 const services = [
   {
     icon: "🩺",
