@@ -2,23 +2,22 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { 
-  useGetAdminDoctorsQuery, 
-  useDeleteAdminDoctorMutation, 
-  useUpdateAdminDoctorMutation 
+import {
+  useGetAdminDoctorsQuery,
+  useDeleteAdminDoctorMutation,
+  useUpdateAdminDoctorMutation
 } from "@/store/fmdApi";
 import { AddDoctorForm } from "@/components/admin/AddDoctorForm";
 import { EditRowModal } from "@/components/admin/EditRowModal";
-import { Button } from "@/shared/components/ui/Button";
 
 export default function AdminDoctorsPage() {
   console.log("AdminDoctorsPage rendered");
-  const [editDoctor, setEditDoctor] = useState<any>(null);
+  const [editDoctor, setEditDoctor] = useState<Record<string, unknown> | null>(null);
 
-  const { 
-    data: doctors, 
-    isLoading, 
-    refetch 
+  const {
+    data: doctors,
+    isLoading,
+    refetch
   } = useGetAdminDoctorsQuery();
 
   const [deleteDoctor] = useDeleteAdminDoctorMutation();
@@ -82,8 +81,8 @@ export default function AdminDoctorsPage() {
                   </td>
                 </tr>
               ) : (
-                doctors?.map((doc: any) => (
-                  <tr key={doc.id} className="hover:bg-gray-50 transition">
+                doctors?.map((doc: Record<string, any>) => (
+                  <tr key={doc?.id || null} className="hover:bg-gray-50 transition">
                     {columns.map((col) => (
                       <td key={col.name} className="px-6 py-4 text-gray-700">
                         {col.name === "specialtyId" ? (

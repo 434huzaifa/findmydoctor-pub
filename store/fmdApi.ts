@@ -346,9 +346,11 @@ export const fmdApi = createApi({
     >({
       query: (params) => {
         const qs = new URLSearchParams();
-        if (params?.doctorId) qs.set("doctorId", String(params.doctorId));
-        if (params?.from) qs.set("from", params.from);
-        if (params?.to) qs.set("to", params.to);
+        if (params && typeof params === "object") {
+          if (params.doctorId) qs.set("doctorId", String(params.doctorId));
+          if (params.from) qs.set("from", params.from);
+          if (params.to) qs.set("to", params.to);
+        }
         const s = qs.size ? `?${qs}` : "";
         return `/appointments/doctor/dashboard${s}`;
       },
@@ -558,14 +560,14 @@ export const fmdApi = createApi({
 
     // Admin — Messages
     getAdminMessages: build.query<
-      { items: any[]; total: number; page: number; limit: number; totalPages: number },
+      { items: Record<string, unknown>[]; total: number; page: number; limit: number; totalPages: number },
       { page: number; limit: number }
     >({
       query: ({ page, limit }) => `/admin/messages?page=${page}&limit=${limit}`,
       providesTags: ["Messages"],
     }),
     updateMessageStatus: build.mutation<
-      any,
+      Record<string, unknown>,
       { id: number; status: string }
     >({
       query: ({ id, status }) => ({

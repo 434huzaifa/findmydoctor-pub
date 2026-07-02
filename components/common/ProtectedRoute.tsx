@@ -25,12 +25,12 @@ export function ProtectedRoute({
       return;
     }
 
-    if (!allowedRoles.includes(user.role as any)) {
+    if (!allowedRoles.includes(user.role)) {
       router.replace("/login");
     }
   }, [user, allowedRoles, router, redirectTo]);
 
-  if (!user || !allowedRoles.includes(user.role as any)) {
+  if (!user || !allowedRoles.includes(user.role)) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">

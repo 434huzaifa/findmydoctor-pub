@@ -48,7 +48,7 @@ export default function TestimonialsPage() {
                 <span key={i}>★</span>
               ))}
             </div>
-            <p className="text-gray-600 italic mb-6 flex-1">"{t.text}"</p>
+            <p className="text-gray-600 italic mb-6 flex-1">&quot;{t.text}&quot;</p>
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-500">
                 {t.name[0]}

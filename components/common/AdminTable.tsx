@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 
 interface Column<T> {
-  key: keyof T | string;
+  key: keyof T; // Ties the key directly to the properties of your data object
   label: string;
   render?: (item: T) => React.ReactNode;
 }
@@ -85,7 +85,7 @@ export function AdminTable<T extends { id: number | string }>({
                     <td key={index} className="px-6 py-4 align-middle">
                       {col.render
                         ? col.render(item)
-                        : (item as any)[col.key]}
+                        : String(item[col.key] ?? "")}
                     </td>
                   ))}
                 </tr>
