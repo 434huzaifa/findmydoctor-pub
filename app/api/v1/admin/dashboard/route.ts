@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
-    const user = getAuthUser(req);
+    const user = await getAuthUser(req);
     requireRole(user, "admin");
 
     const ds = await getDataSource();

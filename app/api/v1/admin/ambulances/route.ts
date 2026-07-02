@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 /** GET — list all ambulances for admin */
 export async function GET(req: NextRequest) {
   try {
-    const user = getAuthUser(req);
+    const user = await getAuthUser(req);
     requireRole(user, "admin");
 
     const ds = await getDataSource();
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
 /** POST — create a new ambulance */
 export async function POST(req: NextRequest) {
   try {
-    const user = getAuthUser(req);
+    const user = await getAuthUser(req);
     requireRole(user, "admin");
 
     const body = await req.json();

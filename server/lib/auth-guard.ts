@@ -1,10 +1,11 @@
 import "server-only";
 import { NextRequest } from "next/server";
 import type { JsonWebTokenError, TokenExpiredError } from "jsonwebtoken";
-import { verifyAccessToken, type TokenPayload } from "@/server/lib/jwt";
+import { verifyAccessToken, type DecodedToken } from "@/server/lib/jwt";
+import { isTokenRevoked } from "@/server/lib/token-denylist";
 import { AppError } from "@/server/lib/app-error";
 
-export function getAuthUser(req: NextRequest): TokenPayload {
+export function getAuthUserToken(req: NextRequest): DecodedToken {
   const authHeader = req.headers.get("authorization");
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     throw new AppError("Missing bearer token", 401, "UNAUTHORIZED");
@@ -24,8 +25,16 @@ export function getAuthUser(req: NextRequest): TokenPayload {
   }
 }
 
+export async function getAuthUser(req: NextRequest): Promise<DecodedToken> {
+  const decoded = getAuthUserToken(req);
+  if (await isTokenRevoked(decoded.jti)) {
+    throw new AppError("Session expired. Please sign in again", 401, "TOKEN_EXPIRED");
+  }
+  return decoded;
+}
+
 export function requireRole(
-  user: TokenPayload,
+  user: Pick<DecodedToken, "role">,
   role: "admin" | "doctor"
 ): void {
   if (user.role !== role) {

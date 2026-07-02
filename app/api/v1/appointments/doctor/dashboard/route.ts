@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   try {
-    const user = getAuthUser(req);
+    const user = await getAuthUser(req);
     const sp = req.nextUrl.searchParams;
     let from = sp.get("from") ?? undefined;
     let to = sp.get("to") ?? undefined;

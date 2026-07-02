@@ -5,21 +5,29 @@ import { useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { logout } from "@/store/authSlice";
 import { selectCartCount } from "@/store/cartSlice";
+import { useLogoutMutation } from "@/store/fmdApi";
 
 export function NavBar() {
   const dispatch = useAppDispatch();
   const user = useAppSelector((s) => s.auth.user);
+  const refreshToken = useAppSelector((s) => s.auth.refreshToken);
   const cartCount = useAppSelector(selectCartCount);
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [logoutRequest] = useLogoutMutation();
 
   const isActive = (p: string) =>
     pathname === p
       ? "text-[color:var(--teal)] font-semibold"
       : "text-[color:var(--text-muted)] hover:text-[color:var(--teal)]";
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await logoutRequest({ refreshToken }).unwrap();
+    } catch {
+      // Ignore — proceed with local logout regardless.
+    }
     dispatch(logout());
     router.push("/");
   };

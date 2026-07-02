@@ -17,7 +17,7 @@ const specialtySchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
-    const user = getAuthUser(req);
+    const user = await getAuthUser(req);
     requireRole(user, "admin");
     const ds = await getDataSource();
     const items = await ds
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = getAuthUser(req);
+    const user = await getAuthUser(req);
     requireRole(user, "admin");
     const body = specialtySchema.parse(await req.json());
     const ds = await getDataSource();

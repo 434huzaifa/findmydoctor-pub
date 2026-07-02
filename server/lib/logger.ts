@@ -2,14 +2,10 @@ import pino from "pino";
 
 const isProduction = process.env.NODE_ENV === "production";
 
+// Plain JSON output everywhere: pino-pretty's worker-thread transport can't be
+// resolved when this module is bundled into a Next.js/Turbopack API route.
 export const logger = pino({
   level: isProduction ? "info" : "debug",
-  transport: isProduction
-    ? undefined
-    : {
-        target: "pino-pretty",
-        options: { colorize: true, singleLine: true },
-      },
 });
 
 // Helper for API routes

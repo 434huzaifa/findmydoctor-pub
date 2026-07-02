@@ -1,8 +1,9 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { logout } from "@/store/authSlice";
+import { useLogoutMutation } from "@/store/fmdApi";
 
 import Link from "next/link";
 import { ProtectedRoute } from "@/components/common/ProtectedRoute";
@@ -20,8 +21,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const refreshToken = useAppSelector((s) => s.auth.refreshToken);
+  const [logoutRequest] = useLogoutMutation();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await logoutRequest({ refreshToken }).unwrap();
+    } catch {
+      // Ignore — proceed with local logout regardless.
+    }
     dispatch(logout());
     router.push("/login");
   };

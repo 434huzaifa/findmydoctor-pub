@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = getAuthUser(req);
+    const user = await getAuthUser(req);
     const { id: idRaw } = await params;
     const id = Number(idRaw);
     if (!Number.isInteger(id) || id <= 0)

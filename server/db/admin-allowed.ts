@@ -24,3 +24,15 @@ export const ALLOWED: Record<string, EntityTarget<ObjectLiteral>> = {
   home_visit_request: HomeVisitRequest,
   virtual_consultation: VirtualConsultation,
 };
+
+// Fields writable only through their dedicated flows (e.g. password hashing on
+// register/login) — never through the generic admin table viewer.
+const RESTRICTED_FIELDS = new Set(["id", "password", "refreshToken"]);
+
+export function stripRestrictedFields(body: Record<string, unknown>) {
+  const clean: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(body)) {
+    if (!RESTRICTED_FIELDS.has(key)) clean[key] = value;
+  }
+  return clean;
+}

@@ -4,7 +4,7 @@ import { AppError } from "@/server/lib/app-error";
 import { ok } from "@/server/lib/response";
 import { getDataSource } from "@/server/db/data-source";
 import { handleError } from "@/server/lib/handle-error";
-import { ALLOWED } from "@/server/db/admin-allowed";
+import { ALLOWED, stripRestrictedFields } from "@/server/db/admin-allowed";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function GET(
@@ -12,7 +12,7 @@ export async function GET(
   { params }: { params: Promise<{ table: string }> },
 ) {
   try {
-    const user = getAuthUser(req);
+    const user = await getAuthUser(req);
     requireRole(user, "admin");
     const { table } = await params;
     const tableName = ALLOWED[table];
@@ -34,12 +34,12 @@ export async function POST(
   { params }: { params: Promise<{ table: string }> },
 ) {
   try {
-    const user = getAuthUser(req);
+    const user = await getAuthUser(req);
     requireRole(user, "admin");
     const { table } = await params;
     const tableName = ALLOWED[table];
     if (!tableName) throw new AppError("Unknown table", 400, "UNKNOWN_TABLE");
-    const body = await req.json();
+    const body = stripRestrictedFields(await req.json());
     const ds = await getDataSource();
     const repo = ds.getRepository(tableName);
     return ok(await repo.save(repo.create(body)), 201);

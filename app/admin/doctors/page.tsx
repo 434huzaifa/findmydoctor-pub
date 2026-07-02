@@ -11,9 +11,7 @@ import { AddDoctorForm } from "@/components/admin/AddDoctorForm";
 import { EditRowModal } from "@/components/admin/EditRowModal";
 
 export default function AdminDoctorsPage() {
-  console.log("AdminDoctorsPage rendered");
   const [editDoctor, setEditDoctor] = useState<Record<string, unknown> | null>(null);
-
 
   const {
     data: doctors,

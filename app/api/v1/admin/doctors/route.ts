@@ -36,7 +36,7 @@ const doctorSchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
-    const user = getAuthUser(req);
+    const user = await getAuthUser(req);
     requireRole(user, "admin");
     const ds = await getDataSource();
     return ok(
@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = getAuthUser(req);
+    const user = await getAuthUser(req);
     requireRole(user, "admin");
     const body = doctorSchema.parse(await req.json());
     const ds = await getDataSource();

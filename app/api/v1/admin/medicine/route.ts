@@ -19,7 +19,7 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const user = getAuthUser(req);
+    const user = await getAuthUser(req);
     requireRole(user, "admin");
     const body = schema.parse(await req.json());
     const ds = await getDataSource();

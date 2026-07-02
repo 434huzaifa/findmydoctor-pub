@@ -129,6 +129,9 @@ export const fmdApi = createApi({
     login: build.mutation<LoginResult, { email: string; password: string }>({
       query: (body) => ({ url: "/auth/login", method: "POST", body }),
     }),
+    logout: build.mutation<{ message: string }, { refreshToken?: string | null }>({
+      query: (body) => ({ url: "/auth/logout", method: "POST", body }),
+    }),
     me: build.query<AuthUser, void>({ query: () => "/auth/me" }),
 
     // Doctors
@@ -588,6 +591,7 @@ export const fmdApi = createApi({
 
 export const {
   useLoginMutation,
+  useLogoutMutation,
   useMeQuery,
   useGetDoctorsQuery,
   useGetMedicinesQuery,

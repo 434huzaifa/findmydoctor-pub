@@ -12,7 +12,6 @@ import { EditRowModal } from "@/components/admin/EditRowModal";
 import { Button } from "@/shared/components/ui/Button";
 
 export default function AdminMedicinesPage() {
-  console.log("AdminMedicinesPage rendered");
   const [page, setPage] = useState(1);
   const [editRow, setEditRow] = useState<Record<string, unknown> | null>(null);
   const limit = 15;

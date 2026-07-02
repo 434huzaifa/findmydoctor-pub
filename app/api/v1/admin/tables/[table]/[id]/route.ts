@@ -4,7 +4,7 @@ import { AppError } from "@/server/lib/app-error";
 import { ok } from "@/server/lib/response";
 import { getDataSource } from "@/server/db/data-source";
 import { handleError } from "@/server/lib/handle-error";
-import { ALLOWED } from "@/server/db/admin-allowed";
+import { ALLOWED, stripRestrictedFields } from "@/server/db/admin-allowed";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function PATCH(
@@ -12,7 +12,7 @@ export async function PATCH(
   { params }: { params: Promise<{ table: string; id: string }> },
 ) {
   try {
-    const user = getAuthUser(req);
+    const user = await getAuthUser(req);
     requireRole(user, "admin");
     const { table, id } = await params;
     const tableName = ALLOWED[table];
@@ -21,7 +21,7 @@ export async function PATCH(
     const repo = ds.getRepository(tableName);
     const existing = await repo.findOne({ where: { id } as never });
     if (!existing) throw new AppError("Row not found", 404, "ROW_NOT_FOUND");
-    Object.assign(existing, await req.json());
+    Object.assign(existing, stripRestrictedFields(await req.json()));
     return ok(await repo.save(existing as object));
   } catch (e) {
     return handleError(e);
@@ -32,7 +32,7 @@ export async function DELETE(
   { params }: { params: Promise<{ table: string; id: string }> },
 ) {
   try {
-    const user = getAuthUser(req);
+    const user = await getAuthUser(req);
     requireRole(user, "admin");
     const { table, id } = await params;
     const tableName = ALLOWED[table];

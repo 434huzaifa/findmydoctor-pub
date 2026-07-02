@@ -9,7 +9,6 @@ import {
   useGetSchemaQuery,
   useGetTableRowsQuery,
   useDeleteTableRowMutation,
-  useUpdateTableRowMutation,
 } from "@/store/fmdApi";
 import { DashboardStats } from "@/components/admin/DashboardStats";
 import { Button } from "@/shared/components/ui/Button";
@@ -41,7 +40,6 @@ export default function AdminPage() {
   );
 
   const [deleteRow] = useDeleteTableRowMutation();
-  const [updateRow] = useUpdateTableRowMutation();
 
   useEffect(() => {
     if (!isAuthorized) router.replace("/login");
@@ -190,10 +188,7 @@ export default function AdminPage() {
                               </td>
                             ))}
                           <td className="px-4 py-3">
-                            <div className="flex gap-2">
-                              <button onClick={() => { }} className="text-xs text-blue-600 hover:underline">Edit</button>
-                              <button onClick={() => handleDelete(activeTable!, row.id as number)} className="text-xs text-red-600 hover:underline">Delete</button>
-                            </div>
+                            <button onClick={() => handleDelete(activeTable!, row.id as number)} className="text-xs text-red-600 hover:underline">Delete</button>
                           </td>
                         </tr>
                       ))}

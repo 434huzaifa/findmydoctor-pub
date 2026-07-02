@@ -24,7 +24,7 @@ const updateSchema = z.object({
 // ─── GET Single Medicine ───────────────────────────────────────────────────
 export async function GET(req: NextRequest, { params }: Params) {
   try {
-    const user = getAuthUser(req);
+    const user = await getAuthUser(req);
     requireRole(user, "admin");
     const { id } = await params;
     const medicineId = parseInt(id);
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest, { params }: Params) {
 // ─── PATCH Update Medicine ─────────────────────────────────────────────────
 export async function PATCH(req: NextRequest, { params }: Params) {
   try {
-    const user = getAuthUser(req);
+    const user = await getAuthUser(req);
     requireRole(user, "admin");
     const { id } = await params;
     const medicineId = parseInt(id);
@@ -87,7 +87,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 // ─── DELETE Medicine ───────────────────────────────────────────────────────
 export async function DELETE(req: NextRequest, { params }: Params) {
   try {
-    const user = getAuthUser(req);
+    const user = await getAuthUser(req);
     requireRole(user, "admin");
     const { id } = await params;
     const medicineId = parseInt(id);
