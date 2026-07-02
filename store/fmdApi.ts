@@ -346,9 +346,11 @@ export const fmdApi = createApi({
     >({
       query: (params) => {
         const qs = new URLSearchParams();
-        if (params?.doctorId) qs.set("doctorId", String(params.doctorId));
-        if (params?.from) qs.set("from", params.from);
-        if (params?.to) qs.set("to", params.to);
+        if (params && typeof params === "object") {
+          if (params.doctorId) qs.set("doctorId", String(params.doctorId));
+          if (params.from) qs.set("from", params.from);
+          if (params.to) qs.set("to", params.to);
+        }
         const s = qs.size ? `?${qs}` : "";
         return `/appointments/doctor/dashboard${s}`;
       },
