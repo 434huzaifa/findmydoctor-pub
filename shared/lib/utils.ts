@@ -127,6 +127,14 @@ export function isValidPhone(phone: string): boolean {
   return cleaned.length === 11;
 }
 
+export function maskPhone(phone: string): string {
+  if (phone.length <= 6) return phone;
+  const start = phone.slice(0, 3);
+  const end = phone.slice(-3);
+  const middle = "*".repeat(phone.length - 6);
+  return `${start}${middle}${end}`;
+}
+
 // ─── Delay ──────────────────────────────────────────────────────────────────
 
 export function delay(ms: number): Promise<void> {

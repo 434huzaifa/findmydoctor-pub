@@ -9,9 +9,11 @@ import {
 } from "@/store/fmdApi";
 import { AddDoctorForm } from "@/components/admin/AddDoctorForm";
 import { EditRowModal } from "@/components/admin/EditRowModal";
+import { DoctorAvailabilityEditor } from "@/components/admin/DoctorAvailabilityEditor";
 
 export default function AdminDoctorsPage() {
   const [editDoctor, setEditDoctor] = useState<Record<string, unknown> | null>(null);
+  const [availabilityDoctor, setAvailabilityDoctor] = useState<Record<string, unknown> | null>(null);
 
   const {
     data: doctors,
@@ -93,6 +95,7 @@ export default function AdminDoctorsPage() {
                     <td className="px-6 py-4">
                       <div className="flex gap-3">
                         <button onClick={() => setEditDoctor(doc)} className="text-blue-600 hover:underline font-medium">Edit</button>
+                        <button onClick={() => setAvailabilityDoctor(doc)} className="text-teal-600 hover:underline font-medium">Availability</button>
                         <button onClick={() => handleDelete(doc.id || null)} className="text-red-600 hover:underline font-medium">Delete</button>
                       </div>
                     </td>
@@ -126,6 +129,14 @@ export default function AdminDoctorsPage() {
             setEditDoctor(null);
             refetch();
           }}
+        />
+      )}
+
+      {availabilityDoctor && (
+        <DoctorAvailabilityEditor
+          doctor={availabilityDoctor as any}
+          onClose={() => setAvailabilityDoctor(null)}
+          onSaved={refetch}
         />
       )}
     </div>

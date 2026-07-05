@@ -1,12 +1,14 @@
 "use client";
 
-import { use } from "react";
+import { use, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   useGetHomeVisitRequestQuery,
   useSimulatePaymentMutation,
 } from "@/store/fmdApi";
+import { OtpStep } from "@/components/common/OtpStep";
+import { useOtpVerification } from "@/shared/hooks";
 
 export default function CheckoutSimulationPage({
   params,
@@ -21,8 +23,27 @@ export default function CheckoutSimulationPage({
   );
   const [simulatePayment, { isLoading: isPaying }] =
     useSimulatePaymentMutation();
+  const otp = useOtpVerification(request?.phone ?? "");
+
+  useEffect(() => {
+    if (request?.isPaid) {
+      router.push(`/checkout/success/${id}`);
+    }
+  }, [request?.isPaid, id, router]);
 
   async function handlePayment() {
+    if (otp.step === "info") {
+      await otp.goToOtpStep();
+      return;
+    }
+
+    try {
+      await otp.verify();
+    } catch {
+      toast.error("Invalid OTP.");
+      return;
+    }
+
     try {
       toast.loading("Processing payment simulation...");
       await new Promise((resolve) => setTimeout(resolve, 2000)); // Simulate delay
@@ -58,7 +79,6 @@ export default function CheckoutSimulationPage({
   }
 
   if (request.isPaid) {
-    router.push(`/checkout/success/${id}`);
     return null;
   }
 
@@ -76,61 +96,76 @@ export default function CheckoutSimulationPage({
 
           {/* Details */}
           <div className="p-6 space-y-4">
-            <div className="rounded-xl bg-gray-50 p-4">
-              <h3 className="text-sm font-semibold text-[color:var(--text)] mb-2">
-                Request Details
-              </h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-[color:var(--text-muted)]">
-                    Patient
-                  </span>
-                  <span className="font-medium">{request.patientName}</span>
+            {otp.step === "info" ? (
+              <>
+                <div className="rounded-xl bg-gray-50 p-4">
+                  <h3 className="text-sm font-semibold text-[color:var(--text)] mb-2">
+                    Request Details
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-[color:var(--text-muted)]">
+                        Patient
+                      </span>
+                      <span className="font-medium">{request.patientName}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[color:var(--text-muted)]">Phone</span>
+                      <span className="font-medium">{request.phone}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[color:var(--text-muted)]">
+                        Address
+                      </span>
+                      <span className="font-medium text-right max-w-[60%]">
+                        {request.address}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[color:var(--text-muted)]">Phone</span>
-                  <span className="font-medium">{request.phone}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[color:var(--text-muted)]">
-                    Address
-                  </span>
-                  <span className="font-medium text-right max-w-[60%]">
-                    {request.address}
-                  </span>
-                </div>
-              </div>
-            </div>
 
-            <div className="border-t border-[color:var(--border)] pt-4">
-              <div className="flex justify-between items-center mb-4">
-                <span className="text-lg font-semibold text-[color:var(--text)]">
-                  Total Due
+                <div className="border-t border-[color:var(--border)] pt-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-lg font-semibold text-[color:var(--text)]">
+                      Total Due
+                    </span>
+                    <span className="text-3xl font-bold text-purple-600">
+                      ৳{typeof request.amount === "string" ? parseFloat(request.amount).toLocaleString() : request.amount.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <OtpStep
+                phone={request.phone}
+                otpValue={otp.otpValue}
+                onOtpValueChange={otp.setOtpValue}
+                onResend={otp.goToOtpStep}
+                isResending={otp.isRequesting}
+                accentColor="purple"
+              />
+            )}
+
+            <button
+              onClick={handlePayment}
+              disabled={isPaying || otp.isRequesting || otp.isVerifying}
+              className="w-full rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 py-4 text-base font-bold text-white shadow-lg transition hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50"
+            >
+              {isPaying ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Processing...
                 </span>
-                <span className="text-3xl font-bold text-purple-600">
-                  ৳{typeof request.amount === "string" ? parseFloat(request.amount).toLocaleString() : request.amount.toLocaleString()}
-                </span>
-              </div>
+              ) : otp.step === "info" ? (
+                "💳 Pay Now"
+              ) : (
+                "Verify & Pay"
+              )}
+            </button>
 
-              <button
-                onClick={handlePayment}
-                disabled={isPaying}
-                className="w-full rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 py-4 text-base font-bold text-white shadow-lg transition hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50"
-              >
-                {isPaying ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    Processing...
-                  </span>
-                ) : (
-                  "💳 Pay Now"
-                )}
-              </button>
-
-              <p className="mt-3 text-xs text-center text-[color:var(--text-muted)]">
-                By clicking, you agree to our terms of service
-              </p>
-            </div>
+            <p className="mt-3 text-xs text-center text-[color:var(--text-muted)]">
+              By clicking, you agree to our terms of service
+            </p>
           </div>
         </div>
       </div>

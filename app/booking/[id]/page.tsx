@@ -8,15 +8,30 @@ import {
   useGetOnlineDoctorsQuery,
   useJoinConsultationQueueMutation,
   useCreateAppointmentMutation,
+  useGetDoctorReviewsQuery,
 } from "@/store/fmdApi";
 import { AppModal } from "@/components/common/AppModal";
+import { OtpStep } from "@/components/common/OtpStep";
 import { isValidPhone, normalizePhoneInput } from "@/shared/lib/utils";
+import { useOtpVerification } from "@/shared/hooks";
+import { useDoctorReviews } from "@/modules/reviews";
+import type { Review } from "@/modules/reviews";
 
 export default function BookingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const { data: doctor, isLoading } = useGetDoctorQuery(parseInt(id));
+  const doctorId = parseInt(id);
+  const { data: doctor, isLoading } = useGetDoctorQuery(doctorId);
   const { data: onlineDoctors } = useGetOnlineDoctorsQuery(undefined, { pollingInterval: 5000 });
+  const { data: recentReviews } = useGetDoctorReviewsQuery({ doctorId, page: 1, limit: 3 });
+  const {
+    reviews: allReviews,
+    total: totalReviews,
+    page: reviewsPage,
+    totalPages: reviewsTotalPages,
+    setPage: setReviewsPage,
+    isLoading: reviewsLoading,
+  } = useDoctorReviews(doctorId);
 
   const [joinQueue, { isLoading: isJoining }] = useJoinConsultationQueueMutation();
   const [createAppointment, { isLoading: isBooking }] = useCreateAppointmentMutation();
@@ -28,14 +43,13 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
 
   // In-person booking modal
   const [showBookingModal, setShowBookingModal] = useState(false);
-  const [otpStep, setOtpStep] = useState<"info" | "otp">("info");
-  const [otpValue, setOtpValue] = useState("");
   const [bName, setBName] = useState("");
   const [bPhone, setBPhone] = useState("");
   const [bDate, setBDate] = useState("");
   const [bSlot, setBSlot] = useState("10:00 AM - 10:30 AM");
   const [bPaymentMethod, setBPaymentMethod] = useState<"online" | "cash">("online");
   const [bPaymentChoice, setBPaymentChoice] = useState<"full" | "advance">("full");
+  const otp = useOtpVerification(bPhone.trim());
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center"><div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" /></div>;
@@ -82,13 +96,15 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
       return;
     }
 
-    if (otpStep === "info") {
-      setOtpStep("otp");
+    if (otp.step === "info") {
+      await otp.goToOtpStep();
       return;
     }
 
-    if (otpValue !== "1234") {
-      toast.error("Invalid OTP. Please enter the correct dummy OTP (1234).");
+    try {
+      await otp.verify();
+    } catch {
+      toast.error("Invalid OTP.");
       return;
     }
 
@@ -113,8 +129,7 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
 
       toast.success("Appointment booked successfully!");
       setShowBookingModal(false);
-      setOtpStep("info");
-      setOtpValue("");
+      otp.reset();
       router.push("/success");
     } catch (err: unknown) {
       toast.error((err as { data?: { message?: string } })?.data?.message ?? "Booking failed");
@@ -206,8 +221,47 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
               </button>
               {availableSlots <= 0 && <p className="mt-2 text-center text-sm text-red-500">No slots available. Please try another date.</p>}
             </div>
+
+            {/* All Patient Reviews (paginated) */}
+            <div className="mt-8 border-t pt-6">
+              <h3 className="font-semibold text-gray-900 mb-3">
+                Patient Reviews {totalReviews > 0 && `(${totalReviews})`}
+              </h3>
+              {reviewsLoading ? (
+                <p className="text-sm text-gray-500">Loading reviews...</p>
+              ) : allReviews.length === 0 ? (
+                <p className="text-sm text-gray-500">No reviews yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {allReviews.map((review: Review) => (
+                    <ReviewCard key={review.id} review={review} />
+                  ))}
+                </div>
+              )}
+              {reviewsTotalPages > 1 && (
+                <div className="mt-4 flex items-center justify-center gap-3">
+                  <button type="button" disabled={reviewsPage <= 1} onClick={() => setReviewsPage(reviewsPage - 1)}
+                    className="rounded-lg border px-3 py-1 text-sm disabled:opacity-40">Prev</button>
+                  <span className="text-sm text-gray-500">Page {reviewsPage} of {reviewsTotalPages}</span>
+                  <button type="button" disabled={reviewsPage >= reviewsTotalPages} onClick={() => setReviewsPage(reviewsPage + 1)}
+                    className="rounded-lg border px-3 py-1 text-sm disabled:opacity-40">Next</button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
+
+        {/* Recent Reviews (last 3) */}
+        {/* {recentReviews && recentReviews.items.length > 0 && (
+          <div className="mt-6 rounded-2xl bg-white border shadow-lg p-6">
+            <h3 className="font-semibold text-gray-900 mb-3">Recent Reviews</h3>
+            <div className="space-y-3">
+              {recentReviews.items.map((review) => (
+                <ReviewCard key={review.id} review={review} />
+              ))}
+            </div>
+          </div>
+        )} */}
       </div>
 
       {/* Video Queue Modal */}
@@ -237,18 +291,18 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
       </AppModal>
 
       {/* In-Person Booking Modal */}
-      <AppModal isOpen={showBookingModal} onClose={() => { setShowBookingModal(false); setOtpStep("info"); setOtpValue(""); }} title={otpStep === "info" ? "Book Appointment" : "OTP Verification"} size="lg"
+      <AppModal isOpen={showBookingModal} onClose={() => { setShowBookingModal(false); otp.reset(); }} title={otp.step === "info" ? "Book Appointment" : "OTP Verification"} size="lg"
         footer={
           <>
-            <button onClick={() => { setShowBookingModal(false); setOtpStep("info"); setOtpValue(""); }} className="rounded-lg border px-4 py-2 text-sm">Cancel</button>
-            <button type="submit" form="booking-form" disabled={isBooking}
+            <button onClick={() => { setShowBookingModal(false); otp.reset(); }} className="rounded-lg border px-4 py-2 text-sm">Cancel</button>
+            <button type="submit" form="booking-form" disabled={isBooking || otp.isRequesting || otp.isVerifying}
               className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-semibold text-white disabled:opacity-50">
-              {isBooking ? "Booking..." : otpStep === "info" ? (bPaymentMethod === "online" ? `💳 Pay ৳${payableAmount} & Book` : "📅 Book Now") : "Verify & Confirm"}
+              {isBooking ? "Booking..." : otp.step === "info" ? (bPaymentMethod === "online" ? `💳 Pay ৳${payableAmount} & Book` : "📅 Book Now") : "Verify & Confirm"}
             </button>
           </>
         }>
         <form id="booking-form" onSubmit={handleBookAppointment} className="space-y-4">
-          {otpStep === "info" ? (
+          {otp.step === "info" ? (
             <>
               <div className="rounded-xl bg-blue-50 p-4">
                 <p className="font-semibold text-blue-900">{doctor.name}</p>
@@ -318,21 +372,33 @@ export default function BookingPage({ params }: { params: Promise<{ id: string }
               </div>
             </>
           ) : (
-            <div className="text-center py-4">
-              <p className="text-sm text-gray-600 mb-4">Please enter the 4-digit OTP sent to your phone to confirm your appointment.</p>
-              <input
-                type="text"
-                maxLength={4}
-                value={otpValue}
-                onChange={(e) => setOtpValue(e.target.value)}
-                className="w-32 text-center text-2xl tracking-widest rounded-lg border-2 border-blue-600 px-2 py-2 outline-none"
-                placeholder="0000"
-                autoFocus
-              />
-            </div>
+            <OtpStep
+              phone={bPhone.trim()}
+              otpValue={otp.otpValue}
+              onOtpValueChange={otp.setOtpValue}
+              onResend={otp.goToOtpStep}
+              isResending={otp.isRequesting}
+              accentColor="blue"
+            />
           )}
         </form>
       </AppModal>
+    </div>
+  );
+}
+
+function ReviewCard({ review }: { review: Review }) {
+  return (
+    <div className="rounded-xl border p-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-semibold text-gray-900">{review.patientName}</p>
+          <p className="text-xs text-gray-400">{review.patientPhone}</p>
+        </div>
+        <p className="text-sm">{"⭐".repeat(review.rating)}</p>
+      </div>
+      {review.comment && <p className="mt-2 text-sm text-gray-600">{review.comment}</p>}
+      <p className="mt-2 text-xs text-gray-400">{new Date(review.createdAt).toLocaleDateString()}</p>
     </div>
   );
 }

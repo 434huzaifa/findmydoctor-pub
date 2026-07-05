@@ -10,11 +10,14 @@ import { ProtectedRoute } from "@/components/common/ProtectedRoute";
 
 const MENU_ITEMS = [
   { label: "Dashboard", href: "/admin", icon: "📊" },
+  { label: "Appointments", href: "/admin/appointments", icon: "📅" },
   { label: "Orders", href: "/admin/orders", icon: "📦" },
   { label: "Ambulances", href: "/admin/ambulances", icon: "🚑" },
   { label: "Doctors", href: "/admin/doctors", icon: "🩺" },
   { label: "Medicines", href: "/admin/medicines", icon: "💊" },
   { label: "Support", href: "/admin/messages", icon: "✉️" },
+  { label: "Reviews", href: "/admin/reviews", icon: "⭐" },
+  { label: "Analytics", href: "/admin/analytics", icon: "📈" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

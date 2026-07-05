@@ -108,8 +108,7 @@ export function Footer() {
         </div>
 
         <div className="mt-8 pt-6 border-t border-[color:var(--border)] text-center text-xs text-[color:var(--text-muted)]">
-          © {new Date().getFullYear()} FindMyDoctor. All rights reserved. Built
-          with Next.js, TypeORM & Tailwind CSS.
+          © {new Date().getFullYear()} FindMyDoctor. All rights reserved.
         </div>
       </div>
     </footer>

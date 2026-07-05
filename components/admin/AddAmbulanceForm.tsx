@@ -13,6 +13,9 @@ const ambulanceSchema = z.object({
   driverName: z.string().min(1, "Driver name required"),
   driverPhone: z.string().min(1, "Driver phone required"),
   baseLocation: z.string().min(1, "Base location required"),
+  hourlyRate: z.coerce.number().min(0, "Hourly rate must be 0 or more"),
+  publicDescription: z.string().optional(),
+  detailedDescription: z.string().optional(),
 });
 
 type AmbulanceForm = z.infer<typeof ambulanceSchema>;
@@ -26,7 +29,7 @@ export function AddAmbulanceForm({ onSaved }: { onSaved: () => void }) {
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<AmbulanceForm>({
+  } = useForm<z.input<typeof ambulanceSchema>, unknown, AmbulanceForm>({
     resolver: zodResolver(ambulanceSchema),
   });
 
@@ -131,6 +134,52 @@ export function AddAmbulanceForm({ onSaved }: { onSaved: () => void }) {
                 {errors.baseLocation.message}
               </p>
             )}
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">Hourly Rate (৳)</label>
+            <input
+              type="number"
+              step="0.01"
+              {...register("hourlyRate")}
+              className={inputCls}
+              placeholder="500"
+            />
+            {errors.hourlyRate && (
+              <p className="text-xs text-red-500 mt-1">
+                {errors.hourlyRate.message}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">
+              Public Description{" "}
+              <span className="text-xs text-gray-400">
+                (visible to patients before booking)
+              </span>
+            </label>
+            <textarea
+              {...register("publicDescription")}
+              className={inputCls}
+              rows={2}
+              placeholder="ICU-equipped ambulance with oxygen support"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">
+              Detailed Description{" "}
+              <span className="text-xs text-gray-400">
+                (visible only after booking is confirmed)
+              </span>
+            </label>
+            <textarea
+              {...register("detailedDescription")}
+              className={inputCls}
+              rows={2}
+              placeholder="Equipment list, certifications, internal notes"
+            />
           </div>
         </form>
       </AppModal>

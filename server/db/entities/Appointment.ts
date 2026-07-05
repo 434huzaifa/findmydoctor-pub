@@ -45,7 +45,10 @@ export class Appointment {
   fee!: number;
 
   @Column({ type: "varchar", default: "confirmed" })
-  status!: string;
+  status!: "confirmed" | "completed" | "cancelled" | "no_show";
+
+  @Column({ type: "timestamptz", nullable: true })
+  completedAt!: Date | null;
 
   @Column({ type: "text", nullable: true })
   prescriptionText!: string | null;

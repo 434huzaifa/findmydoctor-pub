@@ -33,6 +33,15 @@ export class AmbulanceDispatch {
   @Column({ type: "varchar", length: 500, nullable: false })
   pickupLocation!: string;
 
+  @Column({ type: "timestamptz", nullable: true })
+  startTime!: Date | null;
+
+  @Column({ type: "timestamptz", nullable: true })
+  endTime!: Date | null;
+
+  @Column({ type: "numeric", nullable: true })
+  totalCost!: number | null;
+
   @Column({
     type: "enum",
     enum: DispatchStatus,

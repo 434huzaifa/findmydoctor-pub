@@ -8,6 +8,9 @@ export interface Ambulance extends BaseEntity {
   driverPhone: string;
   baseLocation: string;
   isAvailable: boolean;
+  hourlyRate: number;
+  publicDescription: string | null;
+  detailedDescription: string | null;
 }
 
 // ─── Dispatch Status ────────────────────────────────────────────────────────
@@ -21,8 +24,28 @@ export interface AmbulanceDispatch extends BaseEntity {
   callerName: string;
   callerPhone: string;
   pickupLocation: string;
+  startTime: string | null;
+  endTime: string | null;
+  totalCost: number | null;
   status: DispatchStatus;
   ambulance: Ambulance;
+}
+
+// ─── Booking Window Helpers ─────────────────────────────────────────────────
+
+const MIN_BOOKING_HOURS = 1;
+const MS_PER_HOUR = 60 * 60 * 1000;
+
+export function minBookingEnd(start: Date): Date {
+  return new Date(start.getTime() + MIN_BOOKING_HOURS * MS_PER_HOUR);
+}
+
+export function computeHours(start: Date, end: Date): number {
+  return Math.ceil((end.getTime() - start.getTime()) / MS_PER_HOUR);
+}
+
+export function computeCost(hourlyRate: number, start: Date, end: Date): number {
+  return hourlyRate * computeHours(start, end);
 }
 
 // ─── Filters ────────────────────────────────────────────────────────────────
@@ -55,4 +78,6 @@ export interface DispatchForm {
   callerName: string;
   callerPhone: string;
   pickupLocation: string;
+  startTime: string;
+  endTime: string;
 }

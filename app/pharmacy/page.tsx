@@ -92,7 +92,7 @@ export default function PharmacyPage() {
     }
 
     if (otpValue !== "1234") {
-      toast.error("Invalid OTP. Please enter the correct dummy OTP (1234).");
+      toast.error("Invalid OTP.");
       return;
     }
 

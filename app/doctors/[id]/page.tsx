@@ -4,10 +4,20 @@ import { use } from "react";
 import Link from "next/link";
 import { useGetDoctorQuery } from "@/store/fmdApi";
 import { COLORS, getAvailStatus, getColorIndex, getInitials } from "@/lib/doctor";
+import { useDoctorReviews } from "@/modules/reviews";
 
 export default function DoctorProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { data: doctor, isLoading, isError } = useGetDoctorQuery(parseInt(id, 10));
+  const doctorId = parseInt(id, 10);
+  const { data: doctor, isLoading, isError } = useGetDoctorQuery(doctorId);
+  const {
+    reviews,
+    total: totalReviews,
+    page,
+    totalPages,
+    setPage,
+    isLoading: reviewsLoading,
+  } = useDoctorReviews(doctorId);
   if (isLoading) return <div className="py-24 text-center text-[color:var(--text-muted)]">Loading...</div>;
   if (isError || !doctor) return <div className="py-24 text-center text-red-500">Doctor not found.</div>;
   const color = COLORS[getColorIndex(doctor.id)];
@@ -47,6 +57,57 @@ export default function DoctorProfilePage({ params }: { params: Promise<{ id: st
         <Link href="/doctors" className="rounded-xl border border-[color:var(--border)] px-6 py-3 text-sm font-semibold text-[color:var(--text-muted)] hover:text-[color:var(--teal)]">
           Back
         </Link>
+      </div>
+
+      <div className="mt-12">
+        <h2 className="font-serif text-xl font-black text-[color:var(--teal)]">
+          Patient Reviews {totalReviews > 0 && `(${totalReviews})`}
+        </h2>
+        {reviewsLoading ? (
+          <p className="mt-4 text-sm text-[color:var(--text-muted)]">Loading reviews...</p>
+        ) : reviews.length === 0 ? (
+          <p className="mt-4 text-sm text-[color:var(--text-muted)]">No reviews yet.</p>
+        ) : (
+          <div className="mt-4 space-y-3">
+            {reviews.map((review) => (
+              <div key={review.id} className="rounded-xl border border-[color:var(--border)] p-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-[color:var(--teal)]">{review.patientName}</p>
+                  <p className="text-sm">{"⭐".repeat(review.rating)}</p>
+                </div>
+                {review.comment && (
+                  <p className="mt-2 text-sm text-[color:var(--text-muted)]">{review.comment}</p>
+                )}
+                <p className="mt-2 text-xs text-[color:var(--text-muted)]">
+                  {new Date(review.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+        {totalPages > 1 && (
+          <div className="mt-4 flex items-center justify-center gap-3">
+            <button
+              type="button"
+              disabled={page <= 1}
+              onClick={() => setPage(page - 1)}
+              className="rounded-lg border border-[color:var(--border)] px-3 py-1 text-sm font-semibold text-[color:var(--text-muted)] disabled:opacity-40"
+            >
+              Prev
+            </button>
+            <span className="text-sm text-[color:var(--text-muted)]">
+              Page {page} of {totalPages}
+            </span>
+            <button
+              type="button"
+              disabled={page >= totalPages}
+              onClick={() => setPage(page + 1)}
+              className="rounded-lg border border-[color:var(--border)] px-3 py-1 text-sm font-semibold text-[color:var(--text-muted)] disabled:opacity-40"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

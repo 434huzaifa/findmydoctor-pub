@@ -119,6 +119,9 @@ export type Ambulance = {
   driverPhone: string;
   baseLocation: string;
   isAvailable: boolean;
+  hourlyRate: number;
+  publicDescription: string | null;
+  detailedDescription: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -138,6 +141,9 @@ export type AmbulanceDispatch = {
   callerName: string;
   callerPhone: string;
   pickupLocation: string;
+  startTime: string | null;
+  endTime: string | null;
+  totalCost: number | null;
   status: DispatchStatus;
   ambulance: Ambulance;
   createdAt: string;
@@ -196,6 +202,8 @@ export type PaginatedAmbulances = {
   totalPages: number;
 };
 
+export type AppointmentStatus = "confirmed" | "completed" | "cancelled" | "no_show";
+
 export type ApiAppointment = {
   id: number;
   doctorId: number;
@@ -205,7 +213,8 @@ export type ApiAppointment = {
   appointmentDate: string;
   slot: string;
   fee: number;
-  status: string;
+  status: AppointmentStatus;
+  completedAt: string | null;
   prescriptionText: string | null;
   paymentMethod: "online" | "cash";
   paymentChoice: "full" | "advance";
@@ -213,6 +222,41 @@ export type ApiAppointment = {
   paidAmount: number | null;
   amountDue: number;
   paidAt: string | null;
+  doctor?: Doctor;
+};
+
+export type Notification = {
+  id: number;
+  channel: "inapp" | "sms";
+  targetType: "appointment" | "consultation";
+  targetId: number;
+  recipientPhone: string;
+  message: string;
+  status: "pending" | "sent" | "failed";
+  scheduledFor: string;
+  sentAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Review = {
+  id: number;
+  appointmentId: number;
+  doctorId: number;
+  patientName: string;
+  patientPhone: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PaginatedReviews = {
+  items: Review[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 };
 
 export type PhoneAppointment = ApiAppointment & {
@@ -242,6 +286,16 @@ export type AdminDashboard = {
   ambulances: number;
   homeVisits: number;
   consultations: number;
+};
+
+export type AdminTrends = {
+  appointmentsPerDay: { day: string; count: number }[];
+  statusBreakdown: { status: string; count: number }[];
+  noShowRate: number;
+  ratingTrend: { week: string; avgRating: number; count: number }[];
+  topDoctorsByVolume: { doctorId: number; doctorName: string; completedCount: number }[];
+  topDoctorsByRating: { doctorId: number; doctorName: string; rating: number }[];
+  bottomDoctorsByRating: { doctorId: number; doctorName: string; rating: number }[];
 };
 
 export type LoginResult = {

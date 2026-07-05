@@ -21,9 +21,10 @@ export async function GET(
     const page = Math.max(1, Number(sp.get("page") ?? "1"));
     const limit = Math.min(200, Math.max(1, Number(sp.get("limit") ?? "50")));
     const ds = await getDataSource();
+    const relations = table === "ambulance_dispatch" ? ["ambulance"] : undefined;
     const [rows, total] = await ds
       .getRepository(tableName)
-      .findAndCount({ skip: (page - 1) * limit, take: limit });
+      .findAndCount({ skip: (page - 1) * limit, take: limit, relations });
     return ok({ rows, total, page, limit });
   } catch (e) {
     return handleError(e);

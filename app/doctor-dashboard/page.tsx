@@ -13,19 +13,19 @@ import {
   useSaveAppointmentPrescriptionMutation,
   useToggleDoctorOnlineMutation,
   useGetDoctorQuery,
+  useUpdateAppointmentStatusMutation,
 } from "@/store/fmdApi";
 import { AppModal } from "@/components/common/AppModal";
 import type { ApiAppointment, VirtualConsultation } from "@/types/domain";
 
-type AppointmentStatus = "all" | "upcoming" | "completed" | "cancelled";
+type AppointmentFilter = "all" | "upcoming" | "completed" | "cancelled" | "no_show";
 
 export default function DoctorDashboardPage() {
   const router = useRouter();
   const user = useAppSelector((s) => s.auth.user);
 
   // All hooks must be called unconditionally (before any early return)
-  const [dateRange] = useState({ from: "", to: "" });
-  const [statusFilter, setStatusFilter] = useState<AppointmentStatus>("all");
+  const [statusFilter, setStatusFilter] = useState<AppointmentFilter>("all");
   const [selectedAppointment, setSelectedAppointment] =
     useState<ApiAppointment | null>(null);
   const [payAmount, setPayAmount] = useState("");
@@ -43,11 +43,7 @@ export default function DoctorDashboardPage() {
   });
 
   const { data: dashboard, isLoading } = useGetDoctorDashboardQuery(
-    {
-      doctorId,
-      from: dateRange.from || undefined,
-      to: dateRange.to || undefined,
-    },
+    { doctorId },
     { skip: !user }
   );
 
@@ -62,6 +58,7 @@ export default function DoctorDashboardPage() {
   const [savePrescription] = useSavePrescriptionMutation();
   const [saveAppointmentPrescription] = useSaveAppointmentPrescriptionMutation();
   const [toggleOnline] = useToggleDoctorOnlineMutation();
+  const [updateAppointmentStatus] = useUpdateAppointmentStatusMutation();
 
   // Early return AFTER all hooks
   if (!user) {
@@ -76,9 +73,10 @@ export default function DoctorDashboardPage() {
   // Filtered appointments
   const appointments = allAppointments.filter((apt) => {
     if (statusFilter === "all") return true;
-    if (statusFilter === "upcoming") return apt.status === "scheduled";
+    if (statusFilter === "upcoming") return apt.status === "confirmed";
     if (statusFilter === "completed") return apt.status === "completed";
     if (statusFilter === "cancelled") return apt.status === "cancelled";
+    if (statusFilter === "no_show") return apt.status === "no_show";
     return true;
   });
 
@@ -108,6 +106,15 @@ export default function DoctorDashboardPage() {
       refetchQueue();
     } catch {
       toast.error("Failed to accept patient");
+    }
+  };
+
+  const handleUpdateStatus = async (id: number, status: "completed" | "no_show") => {
+    try {
+      await updateAppointmentStatus({ id, status, doctorId }).unwrap();
+      toast.success(status === "completed" ? "Marked as completed" : "Marked as no-show");
+    } catch {
+      toast.error("Failed to update appointment status");
     }
   };
 
@@ -215,13 +222,14 @@ export default function DoctorDashboardPage() {
           {/* Status Filter */}
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as AppointmentStatus)}
+            onChange={(e) => setStatusFilter(e.target.value as AppointmentFilter)}
             className="border rounded-xl px-4 py-2 text-sm"
           >
             <option value="all">All Appointments</option>
             <option value="upcoming">Upcoming</option>
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
+            <option value="no_show">No-show</option>
           </select>
         </div>
 
@@ -270,6 +278,22 @@ export default function DoctorDashboardPage() {
                         >
                           Mark Paid
                         </button>
+                      )}
+                      {apt.status === "confirmed" && (
+                        <>
+                          <button
+                            onClick={() => handleUpdateStatus(apt.id, "completed")}
+                            className="text-sm px-4 py-1.5 bg-blue-600 text-white rounded-lg"
+                          >
+                            Mark Completed
+                          </button>
+                          <button
+                            onClick={() => handleUpdateStatus(apt.id, "no_show")}
+                            className="text-sm px-4 py-1.5 border border-red-300 text-red-600 rounded-lg hover:bg-red-50"
+                          >
+                            No-show
+                          </button>
+                        </>
                       )}
                     </td>
                   </tr>

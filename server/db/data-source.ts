@@ -13,6 +13,9 @@ import { Ambulance } from "./entities/Ambulance";
 import { AmbulanceDispatch } from "./entities/AmbulanceDispatch";
 import { HomeVisitRequest } from "./entities/HomeVisitRequest";
 import { VirtualConsultation } from "./entities/VirtualConsultation";
+import { Notification } from "./entities/Notification";
+import { Review } from "./entities/Review";
+import { Message } from "./entities/Message";
 
 // Ensure standalone scripts (tsx/typeorm CLI) load the same env files as Next.js.
 loadEnvConfig(process.cwd());
@@ -45,6 +48,9 @@ const allEntities = [
   AmbulanceDispatch,
   HomeVisitRequest,
   VirtualConsultation,
+  Notification,
+  Review,
+  Message,
 ];
 
 function hasCurrentEntityMetadata(ds: DataSource) {
@@ -147,4 +153,7 @@ export {
   AmbulanceDispatch,
   HomeVisitRequest,
   VirtualConsultation,
+  Notification,
+  Review,
+  Message,
 };

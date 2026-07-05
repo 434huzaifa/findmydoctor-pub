@@ -11,9 +11,14 @@ import type {
   HomeVisitRequest,
   VirtualConsultation,
   ApiAppointment,
+  AppointmentStatus,
+  Notification,
+  Review,
+  PaginatedReviews,
   PhoneAppointment,
   DoctorDashboard,
   AdminDashboard,
+  AdminTrends,
   LoginResult,
   DoctorListParams,
   MedicineListParams,
@@ -123,6 +128,9 @@ export const fmdApi = createApi({
     "HomeVisits",
     "Consultations",
     "Messages",
+    "Appointments",
+    "Reviews",
+    "Trends",
   ],
   endpoints: (build) => ({
     // Auth
@@ -157,6 +165,18 @@ export const fmdApi = createApi({
     }),
     getDoctor: build.query<Doctor, number>({
       query: (id) => `/doctors/${id}`,
+      providesTags: ["Doctors"],
+    }),
+    updateDoctorProfile: build.mutation<
+      Doctor,
+      { id: number; data: Partial<Doctor> }
+    >({
+      query: ({ id, data }) => ({
+        url: `/doctors/${id}`,
+        method: "PATCH",
+        body: data,
+      }),
+      invalidatesTags: ["Doctors"],
     }),
 
     // Medicines
@@ -203,6 +223,8 @@ export const fmdApi = createApi({
         callerName: string;
         callerPhone: string;
         pickupLocation: string;
+        startTime: string;
+        endTime: string;
       }
     >({
       query: (body) => ({ url: "/ambulances/dispatch", method: "POST", body }),
@@ -327,7 +349,7 @@ export const fmdApi = createApi({
     }),
     verifyLookupOtp: build.mutation<
       OtpVerifyResult,
-      { phone: string; code: string }
+      { phone: string; otp: string }
     >({
       query: (body) => ({
         url: "/appointments/otp/verify",
@@ -388,6 +410,90 @@ export const fmdApi = createApi({
       invalidatesTags: ["DoctorDashboard"],
     }),
 
+    // Appointment status lifecycle
+    updateAppointmentStatus: build.mutation<
+      ApiAppointment,
+      { id: number; status: AppointmentStatus; doctorId?: number }
+    >({
+      query: ({ id, status, doctorId }) => {
+        const qs = doctorId
+          ? `?${new URLSearchParams({ doctorId: String(doctorId) })}`
+          : "";
+        return {
+          url: `/appointments/${id}/status${qs}`,
+          method: "PATCH",
+          body: { status },
+        };
+      },
+      invalidatesTags: ["DoctorDashboard", "Appointments"],
+    }),
+    getAppointmentReminders: build.query<
+      Notification[],
+      { phone: string; otpToken: string }
+    >({
+      query: ({ phone, otpToken }) =>
+        `/appointments/reminders?${new URLSearchParams({ phone, otpToken })}`,
+      providesTags: ["Appointments"],
+    }),
+
+    // Reviews
+    getDoctorReviews: build.query<
+      PaginatedReviews,
+      { doctorId: number; page?: number; limit?: number }
+    >({
+      query: ({ doctorId, page = 1, limit = 10 }) =>
+        `/doctors/${doctorId}/reviews?${new URLSearchParams({
+          page: String(page),
+          limit: String(limit),
+        })}`,
+      providesTags: ["Reviews"],
+    }),
+    submitReview: build.mutation<
+      Review,
+      {
+        appointmentId: number;
+        phone: string;
+        otpToken: string;
+        rating: number;
+        comment?: string;
+      }
+    >({
+      query: (body) => ({ url: "/reviews", method: "POST", body }),
+      invalidatesTags: ["Reviews", "Doctors"],
+    }),
+    getAdminReviews: build.query<
+      PaginatedReviews,
+      { page: number; limit: number }
+    >({
+      query: ({ page, limit }) => `/admin/reviews?page=${page}&limit=${limit}`,
+      providesTags: ["Reviews"],
+    }),
+
+    getAdminAppointments: build.query<
+      {
+        items: ApiAppointment[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+      },
+      { page: number; limit: number; status?: AppointmentStatus | "" }
+    >({
+      query: ({ page, limit, status }) => {
+        const params = new URLSearchParams({
+          page: String(page),
+          limit: String(limit),
+        });
+        if (status) params.set("status", status);
+        return `/admin/appointments?${params}`;
+      },
+      providesTags: ["Appointments"],
+    }),
+    deleteAdminReview: build.mutation<{ message: string }, number>({
+      query: (id) => ({ url: `/admin/reviews/${id}`, method: "DELETE" }),
+      invalidatesTags: ["Reviews", "Doctors"],
+    }),
+
     getAdminMedicineOrders: build.query<
       AdminMedicineOrdersResponse,
       void
@@ -422,6 +528,10 @@ export const fmdApi = createApi({
     getAdminDoctors: build.query<Doctor[], void>({
       query: () => "/admin/doctors",
       providesTags: ["Doctors"],
+    }),
+    getAdminTrends: build.query<AdminTrends, void>({
+      query: () => "/admin/dashboard/trends",
+      providesTags: ["Trends"],
     }),
     getSchema: build.query<SchemaTable[], void>({
       query: () => "/admin/schema",
@@ -541,6 +651,9 @@ export const fmdApi = createApi({
         driverName: string;
         driverPhone: string;
         baseLocation: string;
+        hourlyRate?: number;
+        publicDescription?: string;
+        detailedDescription?: string;
       }
     >({
       query: (body) => ({ url: "/admin/ambulances", method: "POST", body }),
@@ -599,6 +712,8 @@ export const {
   useGetDoctorCitiesQuery,
   useGetSpecialtiesQuery,
   useGetDoctorQuery,
+  useUpdateDoctorProfileMutation,
+  useGetAdminAppointmentsQuery,
   useCreateAppointmentMutation,
   useCreateMedicineOrderMutation,
   useRequestLookupOtpMutation,
@@ -611,6 +726,7 @@ export const {
   useLazyGetDoctorDashboardQuery,
   useMarkAppointmentPaidMutation,
   useGetAdminDashboardQuery,
+  useGetAdminTrendsQuery,
   useGetAdminDoctorsQuery,
   useGetSchemaQuery,
   useGetTableRowsQuery,
@@ -640,6 +756,13 @@ export const {
   useGetOnlineDoctorsQuery,
   usePhoneLookupQuery,
   useSaveAppointmentPrescriptionMutation,
+  useUpdateAppointmentStatusMutation,
+  useGetAppointmentRemindersQuery,
+  // Reviews
+  useGetDoctorReviewsQuery,
+  useSubmitReviewMutation,
+  useGetAdminReviewsQuery,
+  useDeleteAdminReviewMutation,
   // Admin — Ambulances
   useGetAdminAmbulancesQuery,
   useCreateAdminAmbulanceMutation,

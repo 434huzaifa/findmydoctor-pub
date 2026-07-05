@@ -35,6 +35,11 @@ export async function PATCH(
       ambulance.baseLocation = body.baseLocation;
     if (typeof body.isAvailable === "boolean")
       ambulance.isAvailable = body.isAvailable;
+    if (body.hourlyRate !== undefined) ambulance.hourlyRate = body.hourlyRate;
+    if (body.publicDescription !== undefined)
+      ambulance.publicDescription = body.publicDescription;
+    if (body.detailedDescription !== undefined)
+      ambulance.detailedDescription = body.detailedDescription;
 
     await repo.save(ambulance);
     return ok(ambulance);

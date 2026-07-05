@@ -43,9 +43,10 @@ export async function GET(req: NextRequest) {
     query.orderBy("ambulance.isAvailable", "DESC").skip(skip).take(limit);
 
     const [data, total] = await query.getManyAndCount();
+    const items = data.map(({ detailedDescription: _detailedDescription, ...rest }) => rest);
 
     return ok({
-      items: data,
+      items,
       total,
       page,
       limit,

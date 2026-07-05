@@ -1,9 +1,15 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { usePhoneLookupQuery } from "@/store/fmdApi";
+import {
+  usePhoneLookupQuery,
+  useGetAppointmentRemindersQuery,
+  useSubmitReviewMutation,
+} from "@/store/fmdApi";
 import { isValidPhone, normalizePhoneInput } from "@/shared/lib/utils";
+import { useOtpVerification } from "@/shared/hooks";
 import { toast } from "sonner";
+import { AppModal } from "@/components/common/AppModal";
 
 type TabType = "appointments" | "orders" | "ambulance" | "homevisit";
 
@@ -17,8 +23,8 @@ const TABS: { key: TabType; label: string; icon: string }[] = [
 export default function MyCornerPage() {
   const [phone, setPhone] = useState("");
   const [submitted, setSubmitted] = useState("");
-  const [otpStep, setOtpStep] = useState<"info" | "otp">("info");
-  const [otpValue, setOtpValue] = useState("");
+  const [otpToken, setOtpToken] = useState("");
+  const otp = useOtpVerification(phone.trim());
   const [activeTab, setActiveTab] = useState<TabType>("appointments");
   const [pages, setPages] = useState<Record<TabType, number>>({ appointments: 1, orders: 1, ambulance: 1, homevisit: 1 });
 
@@ -27,7 +33,12 @@ export default function MyCornerPage() {
     { skip: !submitted }
   );
 
-  function handleSearch(e: FormEvent) {
+  const { data: reminders } = useGetAppointmentRemindersQuery(
+    { phone: submitted, otpToken },
+    { skip: !submitted || !otpToken }
+  );
+
+  async function handleSearch(e: FormEvent) {
     e.preventDefault();
     if (!phone.trim()) return;
     if (!isValidPhone(phone)) {
@@ -35,13 +46,16 @@ export default function MyCornerPage() {
       return;
     }
 
-    if (otpStep === "info") {
-      setOtpStep("otp");
+    if (otp.step === "info") {
+      await otp.goToOtpStep();
       return;
     }
 
-    if (otpValue !== "1234") {
-      toast.error("Invalid OTP. Please enter the correct dummy OTP (1234).");
+    try {
+      const token = await otp.verify();
+      setOtpToken(token);
+    } catch {
+      toast.error("Invalid OTP.");
       return;
     }
 
@@ -66,20 +80,24 @@ export default function MyCornerPage() {
           </div>
 
           <form onSubmit={handleSearch} className="mt-6 max-w-md mx-auto space-y-3">
-            {otpStep === "info" ? (
+            {otp.step === "info" ? (
               <input type="tel" inputMode="numeric" maxLength={11} placeholder="Enter your phone number..." value={phone} onChange={(e) => setPhone(normalizePhoneInput(e.target.value))} required
                 className="w-full rounded-xl border-0 bg-white/95 px-4 py-3 text-sm shadow-lg outline-none" />
             ) : (
               <>
                 <input type="tel" inputMode="numeric" maxLength={11} value={phone} readOnly
                   className="w-full rounded-xl border-0 bg-white/80 px-4 py-3 text-sm shadow-lg outline-none" />
-                <input type="text" inputMode="numeric" maxLength={4} placeholder="Enter 4-digit OTP" value={otpValue}
-                  onChange={(e) => setOtpValue(e.target.value.replace(/\D/g, "").slice(0, 4))} required
+                <input type="text" inputMode="numeric" maxLength={4} placeholder="Enter 4-digit OTP" value={otp.otpValue}
+                  onChange={(e) => otp.setOtpValue(e.target.value.replace(/\D/g, "").slice(0, 4))} required
                   className="w-full rounded-xl border-0 bg-white/95 px-4 py-3 text-sm shadow-lg outline-none" />
+                <button type="button" onClick={otp.goToOtpStep} disabled={otp.isRequesting}
+                  className="text-xs text-white/80 underline disabled:opacity-50">
+                  {otp.isRequesting ? "Resending..." : "Resend OTP"}
+                </button>
               </>
             )}
-            <button type="submit" className="w-full rounded-xl bg-white px-6 py-3 text-sm font-semibold text-indigo-700 shadow-lg hover:bg-indigo-50">
-              {otpStep === "info" ? "🔍 Search" : "Verify & Confirm"}
+            <button type="submit" disabled={otp.isRequesting || otp.isVerifying} className="w-full rounded-xl bg-white px-6 py-3 text-sm font-semibold text-indigo-700 shadow-lg hover:bg-indigo-50 disabled:opacity-50">
+              {otp.step === "info" ? "🔍 Search" : "Verify & Confirm"}
             </button>
           </form>
         </div>
@@ -89,6 +107,17 @@ export default function MyCornerPage() {
         <section className="py-8 sm:py-12">
           <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
             <p className="mb-4 text-sm text-gray-500">Results for: <strong>{submitted}</strong></p>
+
+            {reminders && reminders.length > 0 && (
+              <div className="mb-6 space-y-2">
+                {reminders.map((n) => (
+                  <div key={n.id} className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
+                    <span className="text-xl">⏰</span>
+                    <p className="text-sm text-amber-800">{n.message}</p>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Tabs */}
             <div className="flex flex-wrap gap-2 mb-6">
@@ -113,7 +142,9 @@ export default function MyCornerPage() {
               </div>
             ) : (
               <>
-                {activeTab === "appointments" && <AppointmentCards items={data.items} />}
+                {activeTab === "appointments" && (
+                  <AppointmentCards items={data.items} phone={submitted} otpToken={otpToken} />
+                )}
                 {activeTab === "orders" && <OrderCards items={data.items} />}
                 {activeTab === "ambulance" && <AmbulanceCards items={data.items} />}
                 {activeTab === "homevisit" && <HomeVisitCards items={data.items} />}
@@ -140,7 +171,9 @@ export default function MyCornerPage() {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-function AppointmentCards({ items }: { items: any[] }) {
+function AppointmentCards({ items, phone, otpToken }: { items: any[]; phone: string; otpToken: string }) {
+  const [reviewTarget, setReviewTarget] = useState<any | null>(null);
+
   return (
     <div className="space-y-4">
       {items.map((a) => (
@@ -176,10 +209,120 @@ function AppointmentCards({ items }: { items: any[] }) {
                 <pre className="whitespace-pre-wrap text-sm text-purple-900 font-mono leading-relaxed">{a.prescriptionText}</pre>
               </div>
             )}
+            {a.status === "completed" && (
+              <div className="mt-4">
+                {a.hasReview ? (
+                  <span className="inline-block rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+                    ✓ Review submitted
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => setReviewTarget(a)}
+                    className="rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
+                  >
+                    ⭐ Rate this visit
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       ))}
+
+      {reviewTarget && (
+        <RateVisitModal
+          appointment={reviewTarget}
+          phone={phone}
+          otpToken={otpToken}
+          onClose={() => setReviewTarget(null)}
+        />
+      )}
     </div>
+  );
+}
+
+function RateVisitModal({
+  appointment,
+  phone,
+  otpToken,
+  onClose,
+}: {
+  appointment: any;
+  phone: string;
+  otpToken: string;
+  onClose: () => void;
+}) {
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [submitReview, { isLoading }] = useSubmitReviewMutation();
+
+  async function handleSubmit() {
+    try {
+      await submitReview({
+        appointmentId: appointment.id,
+        phone,
+        otpToken,
+        rating,
+        comment: comment.trim() || undefined,
+      }).unwrap();
+      toast.success("Thanks for your feedback!");
+      onClose();
+    } catch (e: any) {
+      toast.error(e?.error ?? "Could not submit review.");
+    }
+  }
+
+  return (
+    <AppModal
+      isOpen
+      onClose={onClose}
+      title={`Rate your visit with ${appointment.doctor?.name ?? "your doctor"}`}
+      footer={
+        <>
+          <button
+            onClick={onClose}
+            className="rounded-lg border px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={isLoading}
+            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+          >
+            {isLoading ? "Submitting..." : "Submit Review"}
+          </button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div>
+          <p className="mb-2 text-sm font-medium text-gray-700">Rating</p>
+          <div className="flex gap-1">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setRating(n)}
+                className="text-2xl"
+              >
+                {n <= rating ? "⭐" : "☆"}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <p className="mb-2 text-sm font-medium text-gray-700">Comment (optional)</p>
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            rows={4}
+            className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-indigo-400"
+            placeholder="Share your experience..."
+          />
+        </div>
+      </div>
+    </AppModal>
   );
 }
 
@@ -245,6 +388,21 @@ function AmbulanceCards({ items }: { items: any[] }) {
                   <p className="font-semibold text-gray-900">{d.ambulance?.vehicleNumber ?? `#${d.ambulanceId}`}</p>
                   <p className="text-sm text-gray-500">Driver: {d.ambulance?.driverName} · {d.ambulance?.driverPhone}</p>
                   <p className="text-sm text-gray-500">📍 Pickup: {d.pickupLocation}</p>
+                  {d.startTime && d.endTime && (
+                    <p className="text-sm text-gray-500">
+                      🕒 {new Date(d.startTime).toLocaleString()} → {new Date(d.endTime).toLocaleString()}
+                    </p>
+                  )}
+                  {d.totalCost != null && (
+                    <p className="text-sm font-medium text-gray-700">
+                      💳 Total Cost: ৳{typeof d.totalCost === "string" ? parseFloat(d.totalCost) : d.totalCost}
+                    </p>
+                  )}
+                  {d.ambulance?.detailedDescription && (
+                    <p className="text-sm text-gray-500 mt-1 border-t border-dashed pt-1">
+                      {d.ambulance.detailedDescription}
+                    </p>
+                  )}
                   <p className="text-xs text-gray-400">{new Date(d.createdAt).toLocaleString()}</p>
                 </div>
               </div>

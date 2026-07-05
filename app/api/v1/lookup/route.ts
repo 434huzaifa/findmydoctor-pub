@@ -6,6 +6,7 @@ import {
   Order,
   AmbulanceDispatch,
   HomeVisitRequest,
+  Review,
 } from "@/server/db/data-source";
 import { ok, badRequest } from "@/server/lib/response";
 import { handleError } from "@/server/lib/handle-error";
@@ -45,7 +46,26 @@ export async function GET(req: NextRequest) {
         .take(limit);
 
       const [items, total] = await query.getManyAndCount();
-      return ok({ items, total, page, limit, totalPages: Math.ceil(total / limit) });
+
+      const reviewedIds = items.length
+        ? new Set(
+            (
+              await ds
+                .getRepository(Review)
+                .find({
+                  where: { appointmentId: In(items.map((a) => a.id)) },
+                  select: { appointmentId: true },
+                })
+            ).map((r) => r.appointmentId)
+          )
+        : new Set<number>();
+
+      const itemsWithReviewFlag = items.map((a) => ({
+        ...a,
+        hasReview: reviewedIds.has(a.id),
+      }));
+
+      return ok({ items: itemsWithReviewFlag, total, page, limit, totalPages: Math.ceil(total / limit) });
     }
 
     if (type === "orders") {

@@ -31,7 +31,15 @@ export async function POST(req: NextRequest) {
     requireRole(user, "admin");
 
     const body = await req.json();
-    const { vehicleNumber, driverName, driverPhone, baseLocation } = body;
+    const {
+      vehicleNumber,
+      driverName,
+      driverPhone,
+      baseLocation,
+      hourlyRate,
+      publicDescription,
+      detailedDescription,
+    } = body;
 
     if (!vehicleNumber || !driverName || !driverPhone || !baseLocation) {
       return badRequest(
@@ -48,6 +56,9 @@ export async function POST(req: NextRequest) {
       driverPhone,
       baseLocation,
       isAvailable: true,
+      hourlyRate: hourlyRate ?? 0,
+      publicDescription: publicDescription ?? null,
+      detailedDescription: detailedDescription ?? null,
     });
 
     await repo.save(ambulance);

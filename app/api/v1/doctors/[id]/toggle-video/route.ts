@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 import { getDataSource, Doctor } from "@/server/db/data-source";
 import { ok, notFound } from "@/server/lib/response";
 import { handleError } from "@/server/lib/handle-error";
+import { AppError } from "@/server/lib/app-error";
+import { getAuthUser, requireRole } from "@/server/lib/auth-guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +17,12 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getAuthUser(req);
+    requireRole(user, "doctor");
     const { id } = await params;
+    if (user.doctorId !== parseInt(id))
+      throw new AppError("Forbidden", 403, "FORBIDDEN");
+
     const body = await req.json();
     const { isOnlineForVideo } = body;
 

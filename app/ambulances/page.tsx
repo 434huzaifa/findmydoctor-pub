@@ -8,7 +8,13 @@ import {
 } from "@/store/fmdApi";
 import { AppModal } from "@/components/common/AppModal";
 import { isValidPhone, normalizePhoneInput } from "@/shared/lib/utils";
+import { computeCost, computeHours, minBookingEnd } from "@/modules/ambulance";
 import type { Ambulance, AmbulanceListParams } from "@/types/domain";
+
+function toDatetimeLocal(d: Date) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 export default function AmbulancesPage() {
   const [search, setSearch] = useState("");
@@ -19,6 +25,8 @@ export default function AmbulancesPage() {
   const [callerName, setCallerName] = useState("");
   const [callerPhone, setCallerPhone] = useState("");
   const [pickupLocation, setPickupLocation] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
 
   const [callAmbulance, { isLoading: isCalling }] = useCallAmbulanceMutation();
 
@@ -32,10 +40,28 @@ export default function AmbulancesPage() {
   const { data, isLoading, isFetching } = useGetAmbulancesQuery(queryParams);
   const ambulances = data?.items ?? [];
 
+  const cost = useMemo(() => {
+    if (!selectedAmbulance || !startTime || !endTime) return null;
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    if (end < minBookingEnd(start)) return null;
+    return computeCost(selectedAmbulance.hourlyRate, start, end);
+  }, [selectedAmbulance, startTime, endTime]);
+
+  const hours = useMemo(() => {
+    if (!startTime || !endTime) return null;
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    if (end < minBookingEnd(start)) return null;
+    return computeHours(start, end);
+  }, [startTime, endTime]);
+
   function resetForm() {
     setCallerName("");
     setCallerPhone("");
     setPickupLocation("");
+    setStartTime("");
+    setEndTime("");
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -45,6 +71,14 @@ export default function AmbulancesPage() {
       toast.error("Phone number must be exactly 11 digits.");
       return;
     }
+    if (!startTime || !endTime) {
+      toast.error("Please select a booking start and end time.");
+      return;
+    }
+    if (new Date(endTime) < minBookingEnd(new Date(startTime))) {
+      toast.error("Minimum ambulance hire duration is 1 hour.");
+      return;
+    }
 
     try {
       await callAmbulance({
@@ -52,6 +86,8 @@ export default function AmbulancesPage() {
         callerName: callerName.trim(),
         callerPhone: callerPhone.trim(),
         pickupLocation: pickupLocation.trim(),
+        startTime: new Date(startTime).toISOString(),
+        endTime: new Date(endTime).toISOString(),
       }).unwrap();
 
       toast.success(
@@ -224,6 +260,58 @@ export default function AmbulancesPage() {
               />
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-[color:var(--text)] mb-1">
+                  Booking Start *
+                </label>
+                <input
+                  type="datetime-local"
+                  required
+                  value={startTime}
+                  min={toDatetimeLocal(new Date())}
+                  onChange={(e) => {
+                    setStartTime(e.target.value);
+                    if (e.target.value) {
+                      const newStart = new Date(e.target.value);
+                      if (!endTime || new Date(endTime) < minBookingEnd(newStart)) {
+                        setEndTime(toDatetimeLocal(minBookingEnd(newStart)));
+                      }
+                    }
+                  }}
+                  className="w-full rounded-lg border border-[color:var(--border)] px-3 py-2 text-sm focus:border-red-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[color:var(--text)] mb-1">
+                  Booking End *
+                </label>
+                <input
+                  type="datetime-local"
+                  required
+                  value={endTime}
+                  min={startTime ? toDatetimeLocal(minBookingEnd(new Date(startTime))) : undefined}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="w-full rounded-lg border border-[color:var(--border)] px-3 py-2 text-sm focus:border-red-500 focus:outline-none"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-[color:var(--text-muted)]">
+              Minimum hire duration is 1 hour.
+            </p>
+
+            {hours !== null && cost !== null && (
+              <div className="rounded-lg bg-red-50 border border-red-100 p-3 text-sm text-red-800">
+                <p>
+                  Duration: <span className="font-semibold">{hours}h</span> ·
+                  Rate: ৳{selectedAmbulance.hourlyRate}/h
+                </p>
+                <p className="font-semibold">
+                  Estimated Cost: ৳{cost.toFixed(2)}
+                </p>
+              </div>
+            )}
+
             <div className="rounded-lg bg-yellow-50 border border-yellow-200 p-3">
               <p className="text-xs text-yellow-800">
                 ⚠️ The driver will call you immediately after dispatch. Please
@@ -293,6 +381,15 @@ function AmbulanceCard({
             <span>📞</span>
             <span>{ambulance.driverPhone}</span>
           </div>
+          <div className="flex items-center gap-2 text-sm text-[color:var(--text-muted)]">
+            <span>💳</span>
+            <span>৳{ambulance.hourlyRate}/hour</span>
+          </div>
+          {ambulance.publicDescription && (
+            <p className="text-xs text-[color:var(--text-muted)] border-t border-dashed border-[color:var(--border)] pt-2">
+              {ambulance.publicDescription}
+            </p>
+          )}
         </div>
 
         <button

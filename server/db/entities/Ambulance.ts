@@ -29,6 +29,15 @@ export class Ambulance {
   @Column({ type: "boolean", default: true })
   isAvailable!: boolean;
 
+  @Column({ type: "numeric", default: 0 })
+  hourlyRate!: number;
+
+  @Column({ type: "text", nullable: true })
+  publicDescription!: string | null;
+
+  @Column({ type: "text", nullable: true })
+  detailedDescription!: string | null;
+
   @OneToMany("AmbulanceDispatch", "ambulance")
   dispatches!: Relation<AmbulanceDispatch>[];
 
